@@ -1,0 +1,23 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "(Windows) Launch",
+            "type": "lldb-dap",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/testbed.exe",
+            "args": [],
+            "cwd": "${workspaceFolder}/bin/",
+            "env": [],
+        },
+        {
+            "name": "(Linux) Launch",
+            "type": "lldb-dap",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/testbed",
+            "args": [],
+            "cwd": "${workspaceFolder}/bin/",
+            "env": [],
+        }
+    ]
+}
