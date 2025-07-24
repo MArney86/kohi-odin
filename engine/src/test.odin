@@ -1,20 +1,19 @@
 package Engine
 
-import "core:fmt"
-import "base:runtime"
+import "core:c/libc"
 
 // KAPI equivalent - exported procedure with C calling convention
 when KEXPORT {
     @(export)
-    print_int :: proc "c" (i: I32) {
-        context = runtime.default_context()
-        fmt.printf("The number is: %i\n", i)
+    print_int :: proc "c" (i: i32) {
+        // Use simple C printf - no Odin runtime dependencies
+        libc.printf("The number is: %d\n", i)
+        libc.fflush(nil) // Flush output immediately
     }
 } else {
     // When not exporting, this would be imported from external library
-    // For now, we'll just define it normally for internal use
-    print_int :: proc "c" (i: I32) {
-        context = runtime.default_context()
-        fmt.printf("The number is: %i\n", i)
+    print_int :: proc "c" (i: i32) {
+        libc.printf("The number is: %d\n", i)
+        libc.fflush(nil)
     }
 }

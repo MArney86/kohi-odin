@@ -1,0 +1,19 @@
+
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "defines": [
+                "KEXPORT=true"
+            ],
+            "compilerPath": "/home/Odin/odin",
+            "intelliSenseMode": "odin"
+        },
+        {
+            "name": "Win32",
+            "compilerPath": "c:\\Odin\\odin.exe",
+            "intelliSenseMode": "odin"
+        }
+    ],
+    "version": 4
+}

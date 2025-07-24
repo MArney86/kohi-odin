@@ -2,22 +2,6 @@ package Engine
 
 // Type aliases for common types
 
-// Unsigned integer types
-U8 :: u8
-U16 :: u16
-U32 :: u32
-U64 :: u64
-
-// Signed integer types
-I8 :: i8
-I16 :: i16
-I32 :: i32
-I64 :: i64
-
-// Floating point types
-F32 :: f32
-F64 :: f64
-
 // Boolean types
 INT :: b32
 CHAR :: b8
@@ -27,16 +11,16 @@ TRUE :: true
 FALSE :: false
 
 // Static assertions to ensure type sizes
-#assert(size_of(U8) == 1, "U8 must be 1 byte")
-#assert(size_of(U16) == 2, "U16 must be 2 bytes")
-#assert(size_of(U32) == 4, "U32 must be 4 bytes")
-#assert(size_of(U64) == 8, "U64 must be 8 bytes")
-#assert(size_of(I8) == 1, "I8 must be 1 byte")
-#assert(size_of(I16) == 2, "I16 must be 2 bytes")
-#assert(size_of(I32) == 4, "I32 must be 4 bytes")
-#assert(size_of(I64) == 8, "I64 must be 8 bytes")
-#assert(size_of(F32) == 4, "F32 must be 4 bytes")
-#assert(size_of(F64) == 8, "F64 must be 8 bytes")
+#assert(size_of(u8) == 1, "U8 must be 1 byte")
+#assert(size_of(u16) == 2, "U16 must be 2 bytes")
+#assert(size_of(u32) == 4, "U32 must be 4 bytes")
+#assert(size_of(u64) == 8, "U64 must be 8 bytes")
+#assert(size_of(i8) == 1, "I8 must be 1 byte")
+#assert(size_of(i16) == 2, "I16 must be 2 bytes")
+#assert(size_of(i32) == 4, "I32 must be 4 bytes")
+#assert(size_of(i64) == 8, "I64 must be 8 bytes")
+#assert(size_of(f32) == 4, "F32 must be 4 bytes")
+#assert(size_of(f64) == 8, "F64 must be 8 bytes")
 
 
 
