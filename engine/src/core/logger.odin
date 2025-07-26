@@ -1,20 +1,24 @@
 package Kcore
 
 import Kdef "../defines"
-//temporary import for KAPI
 import "core:fmt"
 import "base:runtime"
+import "core:c/libc"
+
+// Boolean constants
+TRUE :: true
+FALSE :: false
 
 // Logging configuration
-LOG_WARN_ENABLED  :: true
-LOG_INFO_ENABLED  :: true
+LOG_WARN_ENABLED  :: TRUE
+LOG_INFO_ENABLED  :: TRUE
 
 when ODIN_DEBUG {
-    LOG_DEBUG_ENABLED :: true
-    LOG_TRACE_ENABLED :: true
+    LOG_DEBUG_ENABLED :: TRUE
+    LOG_TRACE_ENABLED :: TRUE
 } else {
-    LOG_DEBUG_ENABLED :: false
-    LOG_TRACE_ENABLED :: false
+    LOG_DEBUG_ENABLED :: FALSE
+    LOG_TRACE_ENABLED :: FALSE
 }
 
 log_level :: enum {
@@ -28,13 +32,14 @@ log_level :: enum {
 
 initialize_logging :: proc() -> b8 {
     //TODO: create log file.
-    return Kdef.TRUE
+    return TRUE
 }
 
 shutdown_logging :: proc() {
     //TODO: cleanup logging/write queued entries.
 }
 
+// Internal logging function
 log_output :: proc(level: log_level, message: string, args: ..any) {
     level_strings := [6]string{
         "[FATAL]: ",
@@ -44,8 +49,6 @@ log_output :: proc(level: log_level, message: string, args: ..any) {
         "[DEBUG]: ", 
         "[TRACE]: ",
     }
-    
-    //is_error := level < log_level.LOG_LEVEL_WARN
     
     // Format the message with arguments
     formatted_message := ""
@@ -57,110 +60,59 @@ log_output :: proc(level: log_level, message: string, args: ..any) {
     
     // Create the final output message
     out_message := fmt.tprintf("%s%s\n", level_strings[level], formatted_message)
-    
-    //TODO: platform-specific output
     fmt.print(out_message)
 }
 
-// KAPI exported version of log_output
-when Kdef.KEXPORT {
-    @(export, link_name="log_output")
-    log_output_kapi :: proc "c" (level: i32, message: cstring) {
-        context = runtime.default_context()
-        log_output(log_level(level), string(message))
-    }
-}
-
 // Logs a fatal level message.
-when Kdef.KEXPORT {
-    @(export, link_name="KFATAL")
-    KFATAL_kapi :: proc "c" (message: cstring) {
-        context = runtime.default_context()
-        log_output(log_level.LOG_LEVEL_FATAL, string(message))
-    }
+KFATAL :: proc(message: string, args: ..any) {
+    log_output(log_level.LOG_LEVEL_FATAL, message, ..args)
 }
 
 // Logs an error-level message
-when Kdef.KEXPORT {
-    @(export, link_name="KERROR")
-    KERROR_kapi :: proc "c" (message: cstring) {
-        context = runtime.default_context()
-        log_output(log_level.LOG_LEVEL_ERROR, string(message))
-    }
+KERROR :: proc(message: string, args: ..any) {
+    log_output(log_level.LOG_LEVEL_ERROR, message, ..args)
 }
 
+// Logs a warning-level message
 when LOG_WARN_ENABLED {
-    // Logs a warning-level message
-    when Kdef.KEXPORT {
-        @(export, link_name="KWARN")
-        KWARN_kapi :: proc "c" (message: cstring) {
-            context = runtime.default_context()
-            log_output(log_level.LOG_LEVEL_WARN, string(message))
-        }
+    KWARN :: proc(message: string, args: ..any) {
+        log_output(log_level.LOG_LEVEL_WARN, message, ..args)
     }
 } else {
-    // Does nothing when LOG_WARN_ENABLED != true
-    when Kdef.KEXPORT {
-        @(export, link_name="KWARN")
-        KWARN_kapi :: proc "c" (message: cstring) {
-            // No-op
-        }
+    KWARN :: proc(message: string, args: ..any) {
+        // Does nothing when LOG_WARN_ENABLED != true
     }
 }
 
+// Logs an info-level message
 when LOG_INFO_ENABLED {
-    // Logs an info-level message
-    when Kdef.KEXPORT {
-        @(export, link_name="KINFO")
-        KINFO_kapi :: proc "c" (message: cstring) {
-            context = runtime.default_context()
-            log_output(log_level.LOG_LEVEL_INFO, string(message))
-        }
+    KINFO :: proc(message: string, args: ..any) {
+        log_output(log_level.LOG_LEVEL_INFO, message, ..args)
     }
 } else {
-    // Does nothing when LOG_INFO_ENABLED != true
-    when Kdef.KEXPORT {
-        @(export, link_name="KINFO")
-        KINFO_kapi :: proc "c" (message: cstring) {
-            // No-op
-        }
+    KINFO :: proc(message: string, args: ..any) {
+        // Does nothing when LOG_INFO_ENABLED != true
     }
 }
 
+// Logs a debug-level message
 when LOG_DEBUG_ENABLED {
-    // Logs a debug-level message
-    when Kdef.KEXPORT {
-        @(export, link_name="KDEBUG")
-        KDEBUG_kapi :: proc "c" (message: cstring) {
-            context = runtime.default_context()
-            log_output(log_level.LOG_LEVEL_DEBUG, string(message))
-        }
+    KDEBUG :: proc(message: string, args: ..any) {
+        log_output(log_level.LOG_LEVEL_DEBUG, message, ..args)
     }
 } else {
-    // Does nothing when LOG_DEBUG_ENABLED != true
-    when Kdef.KEXPORT {
-        @(export, link_name="KDEBUG")
-        KDEBUG_kapi :: proc "c" (message: cstring) {
-            // No-op
-        }
+    KDEBUG :: proc(message: string, args: ..any) {
+        // Does nothing when LOG_DEBUG_ENABLED != true
     }
 }
 
+// Logs a trace-level message
 when LOG_TRACE_ENABLED {
-    // Logs a trace-level message
-    when Kdef.KEXPORT {
-        @(export, link_name="KTRACE")
-        KTRACE_kapi :: proc "c" (message: cstring) {
-            context = runtime.default_context()
-            log_output(log_level.LOG_LEVEL_TRACE, string(message))
-        }
+    KTRACE :: proc(message: string, args: ..any) {
+        log_output(log_level.LOG_LEVEL_TRACE, message, ..args)
     }
 } else {
-    // Does nothing when LOG_TRACE_ENABLED != true
-    when Kdef.KEXPORT {
-        @(export, link_name="KTRACE")
-        KTRACE_kapi :: proc "c" (message: cstring) {
-            // No-op
-        }
+    KTRACE :: proc(message: string, args: ..any) {
+        // Does nothing when LOG_TRACE_ENABLED != true
     }
 }
