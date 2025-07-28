@@ -28,50 +28,50 @@ FALSE :: false
 
 // Platform detection - automatic based on ODIN_OS
 when ODIN_OS == .Windows {
-    KPLATFORM_WINDOWS :: TRUE
-    KPLATFORM_LINUX :: FALSE
-    KPLATFORM_ANDROID :: FALSE
-    KPLATFORM_UNIX :: FALSE
-    KPLATFORM_POSIX :: FALSE
-    KPLATFORM_APPLE :: FALSE
-    KPLATFORM_IOS :: FALSE
-    KPLATFORM_IOS_SIMULATOR :: FALSE
-    KPLATFORM_MACOS :: FALSE
-
+    KPLATFORM_WINDOWS :: true
+    KPLATFORM_LINUX :: false
+    KPLATFORM_ANDROID :: false
+    KPLATFORM_UNIX :: false
+    KPLATFORM_POSIX :: false
+    KPLATFORM_APPLE :: false
+    KPLATFORM_IOS :: false
+    KPLATFORM_IOS_SIMULATOR :: false
+    KPLATFORM_MACOS :: false
+    
     // Ensure 64-bit on Windows
     when size_of(rawptr) != 8 {
         #panic("64-bit is required on Windows")
     }
 } else when ODIN_OS == .Linux {
-    KPLATFORM_WINDOWS :: FALSE
-    KPLATFORM_LINUX :: TRUE
-    KPLATFORM_ANDROID :: FALSE  // Note: Android detection would need additional checks
-    KPLATFORM_UNIX :: FALSE
-    KPLATFORM_POSIX :: TRUE
-    KPLATFORM_APPLE :: FALSE
-    KPLATFORM_IOS :: FALSE
-    KPLATFORM_IOS_SIMULATOR :: FALSE
-    KPLATFORM_MACOS :: FALSE
+    KPLATFORM_WINDOWS :: false
+    KPLATFORM_LINUX :: true
+    KPLATFORM_ANDROID :: false  // Note: Android detection would need additional checks
+    KPLATFORM_UNIX :: false
+    KPLATFORM_POSIX :: true
+    KPLATFORM_APPLE :: false
+    KPLATFORM_IOS :: false
+    KPLATFORM_IOS_SIMULATOR :: false
+    KPLATFORM_MACOS :: false
 } else when ODIN_OS == .Darwin {
-    KPLATFORM_WINDOWS :: FALSE
-    KPLATFORM_LINUX :: FALSE
-    KPLATFORM_ANDROID :: FALSE
-    KPLATFORM_UNIX :: FALSE
-    KPLATFORM_POSIX :: TRUE
-    KPLATFORM_APPLE :: TRUE
-    KPLATFORM_IOS :: FALSE
-    KPLATFORM_IOS_SIMULATOR :: FALSE
-    KPLATFORM_MACOS :: TRUE
+    KPLATFORM_WINDOWS :: false
+    KPLATFORM_LINUX :: false
+    KPLATFORM_ANDROID :: false
+    KPLATFORM_UNIX :: false
+    KPLATFORM_POSIX :: true
+    KPLATFORM_APPLE :: true
+    KPLATFORM_IOS :: false
+    KPLATFORM_IOS_SIMULATOR :: false
+    KPLATFORM_MACOS :: true
 } else when ODIN_OS == .FreeBSD || ODIN_OS == .OpenBSD || ODIN_OS == .NetBSD {
-    KPLATFORM_WINDOWS :: FALSE
-    KPLATFORM_LINUX :: FALSE
-    KPLATFORM_ANDROID :: FALSE
-    KPLATFORM_UNIX :: TRUE
-    KPLATFORM_POSIX :: TRUE
-    KPLATFORM_APPLE :: FALSE
-    KPLATFORM_IOS :: FALSE
-    KPLATFORM_IOS_SIMULATOR :: FALSE
-    KPLATFORM_MACOS :: FALSE
+    KPLATFORM_WINDOWS :: false
+    KPLATFORM_LINUX :: false
+    KPLATFORM_ANDROID :: false
+    KPLATFORM_UNIX :: true
+    KPLATFORM_POSIX :: true
+    KPLATFORM_APPLE :: false
+    KPLATFORM_IOS :: false
+    KPLATFORM_IOS_SIMULATOR :: false
+    KPLATFORM_MACOS :: false
 } else {
     #panic("Unknown platform")
 }
@@ -80,5 +80,46 @@ when ODIN_OS == .Windows {
 // In Odin, you typically use the foreign system for DLL imports/exports
 // and the export attribute for procedures you want to expose
 
-KEXPORT :: #config(KEXPORT, FALSE)
+KEXPORT :: #config(KEXPORT, false)
+
+// KAPI equivalent for different build configurations
+when KEXPORT {
+    // When exporting (building as DLL/shared library)
+    when ODIN_OS == .Windows {
+        // On Windows, use @(export) attribute for DLL exports
+        KAPI :: proc(fn: typeid) -> typeid {
+            return fn
+        }
+    } else {
+        // On Unix-like systems, symbols are visible by default
+        KAPI :: proc(fn: typeid) -> typeid {
+            return fn
+        }
+    }
+} else {
+    // When importing (using the DLL/shared library)
+    when ODIN_OS == .Windows {
+        // On Windows, procedures will be imported via foreign blocks
+        KAPI :: proc(fn: typeid) -> typeid {
+            return fn
+        }
+    } else {
+        // On Unix-like systems, no special handling needed
+        KAPI :: proc(fn: typeid) -> typeid {
+            return fn
+        }
+    }
+}
+
+// Usage pattern for exported procedures:
+// @(export) when KEXPORT else @(link_name="function_name")
+// procedure_name :: proc "c" (params) -> return_type {
+//     // implementation
+// }
+
+// Alternative simpler approach - just use export attribute directly:
+// when KEXPORT {
+//     @(export)
+//     your_function :: proc "c" (params) -> return_type { /* body */ }
+// }
 

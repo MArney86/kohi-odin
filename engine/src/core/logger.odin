@@ -1,17 +1,12 @@
 package Kcore
 
-import Kdef "../defines"
 import "core:fmt"
 import "base:runtime"
 import "core:c/libc"
 
-// Boolean constants
-TRUE :: true
-FALSE :: false
-
-// Logging configuration
-LOG_WARN_ENABLED  :: TRUE
-LOG_INFO_ENABLED  :: TRUE
+// Enable WARN and INFO logging by default
+LOG_WARN_ENABLED :: TRUE
+LOG_INFO_ENABLED :: TRUE
 
 when ODIN_DEBUG {
     LOG_DEBUG_ENABLED :: TRUE
@@ -22,12 +17,12 @@ when ODIN_DEBUG {
 }
 
 log_level :: enum {
-    LOG_LEVEL_FATAL = 0,
-    LOG_LEVEL_ERROR = 1,
-    LOG_LEVEL_WARN  = 2,
-    LOG_LEVEL_INFO  = 3,
-    LOG_LEVEL_DEBUG = 4,
-    LOG_LEVEL_TRACE = 5,
+    LOG_LEVEL_FATAL,
+    LOG_LEVEL_ERROR,
+    LOG_LEVEL_WARN,
+    LOG_LEVEL_INFO,
+    LOG_LEVEL_DEBUG,
+    LOG_LEVEL_TRACE,
 }
 
 initialize_logging :: proc() -> b8 {
@@ -41,6 +36,8 @@ shutdown_logging :: proc() {
 
 // Internal logging function
 log_output :: proc(level: log_level, message: string, args: ..any) {
+    is_error: b8 = level < log_level.LOG_LEVEL_WARN;
+
     level_strings := [6]string{
         "[FATAL]: ",
         "[ERROR]: ", 
@@ -60,7 +57,12 @@ log_output :: proc(level: log_level, message: string, args: ..any) {
     
     // Create the final output message
     out_message := fmt.tprintf("%s%s\n", level_strings[level], formatted_message)
-    fmt.print(out_message)
+    
+    if is_error {
+        platform_console_write_error(out_message, cast(u8)level)
+    } else {
+        platform_console_write(out_message, cast(u8)level)
+    }
 }
 
 // Logs a fatal level message.

@@ -1,5 +1,11 @@
 package Testbed
 
+import Kcore "../../engine/src/core"
+
+// Boolean constants
+TRUE :: true
+FALSE :: false
+
 // Platform-specific import for the engine library
 when ODIN_OS == .Windows {
     foreign import Engine "../../bin/engine.lib"
@@ -26,6 +32,11 @@ foreign Engine {
     KASSERT :: proc(expr: bool, file: cstring, line: i32) ---
     KASSERT_MSG :: proc(expr: bool, message: cstring, file: cstring, line: i32) ---
     KASSERT_DEBUG :: proc(expr: bool, file: cstring, line: i32) ---
+
+    // Platform state management
+    platform_startup :: proc(plat_state: ^Kcore.platform_state, application_name: cstring, x: i32, y: i32, width: i32, height: i32) -> b8 ---
+    platform_shutdown :: proc(plat_state: ^Kcore.platform_state) ---
+    platform_pump_messages :: proc(plat_state: ^Kcore.platform_state) ---
 }
 
 // Wrapper procedures to handle caller location automatically
@@ -49,7 +60,14 @@ main :: proc() {
     KINFO("A test message: INFO") 
     KDEBUG("A test message: DEBUG")
     KTRACE("A test message: TRACE")
-    
-    // Test assertion - should fail and trigger debug break
-    KASSERT_O(1 == 0)
+
+    state := Kcore.platform_state{}
+    if (platform_startup(&state, "kohi Engine Testbed", 100, 100, 1280, 720)) {
+        for (TRUE) {
+            platform_pump_messages(&state)
+        }
+    }
+
+    platform_shutdown(&state)
+
 }

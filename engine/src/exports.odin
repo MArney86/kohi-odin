@@ -1,9 +1,9 @@
 package Engine
 
-import Kdefines "./defines"
 import Kcore "./core"
 import Kasserts "./asserts" 
 import "base:runtime"
+import mem "core:mem"
 
 // KAPI equivalent for different build configurations
 when Kcore.KEXPORT {
@@ -46,7 +46,7 @@ when Kcore.KEXPORT {
 //     your_function :: proc "c" (params) -> return_type { /* body */ }
 // }
 
-when Kdefines.KEXPORT {
+when Kcore.KEXPORT {
 // KAPI exports for assertions - call internal functions with recreated location
     
     @(export, link_name="KASSERT")
@@ -55,7 +55,7 @@ when Kdefines.KEXPORT {
         context = runtime.default_context()
         loc := runtime.Source_Code_Location{
             file_path = string(file),
-            line = int(line),
+            line = cast(i32)(line),
             column = 0,
             procedure = "",
         }
@@ -68,7 +68,7 @@ when Kdefines.KEXPORT {
         context = runtime.default_context()
         loc := runtime.Source_Code_Location{
             file_path = string(file),
-            line = int(line),
+            line = cast(i32)(line),
             column = 0,
             procedure = "",
         }
@@ -81,7 +81,7 @@ when Kdefines.KEXPORT {
         context = runtime.default_context()
         loc := runtime.Source_Code_Location{
             file_path = string(file),
-            line = int(line),
+            line = cast(i32)(line),
             column = 0,
             procedure = "",
         }
@@ -93,36 +93,60 @@ when Kdefines.KEXPORT {
     @(export, link_name="log_output")
     KAPI_log_output :: proc "c" (level: i32, message: cstring) {
         context = runtime.default_context()
-        Kcore.log_output(log_level(level), string(message))
+        Kcore.log_output(Kcore.log_level(level), string(message))
     }
 
     @(export, link_name="KFATAL")
     KAPI_KFATAL :: proc "c" (message: cstring) {
+        context = runtime.default_context()
         Kcore.KFATAL(string(message))
     }
 
     @(export, link_name="KERROR")
     KAPI_KERROR :: proc "c" (message: cstring) {
+        context = runtime.default_context()
         Kcore.KERROR(string(message))
     }
 
     @(export, link_name="KWARN")
     KAPI_KWARN :: proc "c" (message: cstring) {
+        context = runtime.default_context()
         Kcore.KWARN(string(message))
     }
 
     @(export, link_name="KINFO")
     KAPI_KINFO :: proc "c" (message: cstring) {
+        context = runtime.default_context()
         Kcore.KINFO(string(message))
     }
 
     @(export, link_name="KDEBUG")
     KAPI_KDEBUG :: proc "c" (message: cstring) {
+        context = runtime.default_context()
         Kcore.KDEBUG(string(message))
     }
     
     @(export, link_name="KTRACE")
     KAPI_KTRACE :: proc "c" (message: cstring) {
+        context = runtime.default_context()
         Kcore.KTRACE(string(message))
     }
+
+    @(export, link_name="platform_startup")
+    KAPI_platform_startup :: proc "c" (plat_state: ^Kcore.platform_state, application_name: cstring, x: i32, y: i32, width: i32, height: i32) -> b8 {
+        context = runtime.default_context()
+        return Kcore.platform_startup(plat_state, string(application_name), x, y, width, height)
+    }
+
+    @(export, link_name="platform_shutdown")
+    KAPI_platform_shutdown :: proc "c" (plat_state: ^Kcore.platform_state) {
+        context = runtime.default_context()
+        Kcore.platform_shutdown(plat_state)
+    }
+
+    @(export, link_name="platform_pump_messages")
+    KAPI_platform_pump_messages :: proc "c" (plat_state: ^Kcore.platform_state) {
+        context = runtime.default_context()
+        Kcore.platform_pump_messages(plat_state)
+    }    
 }
