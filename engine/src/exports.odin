@@ -135,7 +135,7 @@ when Kcore.KEXPORT {
     @(export, link_name="platform_startup")
     KAPI_platform_startup :: proc "c" (plat_state: ^Kcore.platform_state, application_name: cstring, x: i32, y: i32, width: i32, height: i32) -> b8 {
         context = runtime.default_context()
-        return Kcore.platform_startup(plat_state, string(application_name), x, y, width, height)
+        return Kcore.platform_startup(plat_state, application_name, x, y, width, height)
     }
 
     @(export, link_name="platform_shutdown")
@@ -145,8 +145,8 @@ when Kcore.KEXPORT {
     }
 
     @(export, link_name="platform_pump_messages")
-    KAPI_platform_pump_messages :: proc "c" (plat_state: ^Kcore.platform_state) {
+    KAPI_platform_pump_messages :: proc "c" (plat_state: ^Kcore.platform_state) -> b8 {
         context = runtime.default_context()
-        Kcore.platform_pump_messages(plat_state)
+        return Kcore.platform_pump_messages(plat_state)
     }    
 }

@@ -1,32 +1,12 @@
 package Kcore
 
 import mem "core:mem"
-import win32 "core:sys/windows"
 import utf16 "core:unicode/utf16"
-import builtin "base:builtin"
-
-// Platform state structure
-platform_state :: struct {
-    internal_state: rawptr,
-}
-
-cstring_to_utf16 :: proc(str: cstring) -> ^u16 {
-    str_odin := string(str)
-    utf16_slice := make([]u16, len(str_odin) * 2)
-    utf16.encode_string(utf16_slice, str_odin) // Use encode_string to fill the buffer
-    return &utf16_slice[0]
-}
-
-string_to_utf16 :: proc(str: string) -> ^u16 {
-    utf16_slice := make([]u16, len(str) * 2)
-    utf16.encode_string(utf16_slice, str)
-    return &utf16_slice[0]
-}
+import win32 "core:sys/windows"
 
 // Windows layer
 when ODIN_OS == .Windows {
-    // Use pure Odin and core:system/windows for Win32 API
-
+    
     internal_state :: struct {
         h_instance: win32.HINSTANCE,
         h_wnd:      win32.HWND,
@@ -204,29 +184,6 @@ when ODIN_OS == .Windows {
         return TRUE
     }
 
-    //Platform-based memory management functions
-
-    platform_allocate :: proc(size: u64, aligned: b8) -> rawptr {
-        new_mem, _ := mem.alloc(cast(int)size)
-        return new_mem
-    }
-
-    platform_free :: proc(block: rawptr, aligned: b8) {
-        mem.free(block)
-    }
-
-    platform_zero_memory :: proc(block: rawptr, size: u64) -> rawptr {
-        return mem.zero(block, cast(int)size)
-    }
-
-    platform_copy_memory :: proc(dest: rawptr, source: rawptr, size: u64) -> rawptr {
-        return mem.copy(dest, source, cast(int)size)
-    }
-
-    platform_set_memory :: proc(dest: rawptr, value: u8, size: u64) -> rawptr {
-        return mem.set(dest, value, cast(int)size)
-    }
-
     // Platform-based console functions
 
     platform_console_write :: proc(message: string, colour: u8) {
@@ -266,75 +223,5 @@ when ODIN_OS == .Windows {
         now_time: win32.LARGE_INTEGER
         win32.QueryPerformanceCounter(&now_time)
         return cast(f64)now_time * clock_frequency
-    }
-
-    //Sleep on the thread for the provided ms. Thsi blocks the tread.
-    //Should only be used for giving time back to the OS for unused update power.
-    //Therefore it is not exported.
-    platform_sleep :: proc(ms: u64) {
-        win32.Sleep(cast(win32.DWORD)ms)
-    }
-}
-
-when ODIN_OS == .Linux {
-    // Platform-based application state functions
-
-    platform_startup :: proc(plat_state: ^platform_state, application_name: cstring, x: i32, y: i32, width: i32, height: i32) -> b8 {
-        // Stub implementation: always succeed
-        return TRUE
-    }
-
-    platform_shutdown :: proc(plat_state: ^platform_state) {
-        // Stub implementation: nothing to clean up
-    }
-
-    platform_pump_messages :: proc(plat_state: ^platform_state) -> b8 {
-        // Stub implementation: always return TRUE
-        return TRUE
-    }
-
-    //Platform-based memory management functions
-
-    perform_allocate :: proc(size: u64, aligned: b8) -> rawptr {
-        return rawptr(0)
-    }
-
-    platform_free :: proc(block: rawptr, aligned: b8) {
-        // Stub implementation: do nothing
-    }
-
-    platform_zero_memory :: proc(block: rawptr, size: u64) -> rawptr{
-        return rawptr(0)
-    }
-
-    platform_copy_memory :: proc(dest: rawptr, source: rawptr, size: u64) -> rawptr {
-        return rawptr(0)
-    }
-
-    platform_set_memory :: proc(dest: rawptr, value: u8, size: u64) -> rawptr {
-        return rawptr(0)
-    }
-
-    // Platform-based console functions
-
-    platform_console_write :: proc(message: cstring, colour: u8) {
-        // Stub implementation: do nothing
-    }
-
-    platform_console_write_error :: proc(message: cstring, colour: u8) {
-        // Stub implementation: do nothing
-    }
-
-    // Platform-based time functions
-    platform_get_absolute_time :: proc() -> u64 {
-        // Stub implementation: return 0
-        return 0
-    }
-
-    //Sleep on the thread for the provided ms. Thsi blocks the tread.
-    //Should only be used for giving time back to the OS for unused update power.
-    //Therefore it is not exported.
-    platform_sleep :: proc(ms: u64) {
-        // Stub implementation: do nothing
     }
 }

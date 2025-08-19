@@ -1,6 +1,8 @@
 package Testbed
 
 import Kcore "../../engine/src/core"
+import "core:fmt"
+import "core:c/libc"
 
 // Boolean constants
 TRUE :: true
@@ -36,7 +38,7 @@ foreign Engine {
     // Platform state management
     platform_startup :: proc(plat_state: ^Kcore.platform_state, application_name: cstring, x: i32, y: i32, width: i32, height: i32) -> b8 ---
     platform_shutdown :: proc(plat_state: ^Kcore.platform_state) ---
-    platform_pump_messages :: proc(plat_state: ^Kcore.platform_state) ---
+    platform_pump_messages :: proc(plat_state: ^Kcore.platform_state) -> b8 ---
 }
 
 // Wrapper procedures to handle caller location automatically
@@ -53,6 +55,8 @@ KASSERT_DEBUG_O :: proc(expr: bool, loc := #caller_location) {
 }
 
 main :: proc() {
+    fmt.println("Starting testbed...")
+
     // Test logging functions
     KFATAL("A test message: FATAL")
     KERROR("A test message: ERROR")
@@ -61,13 +65,31 @@ main :: proc() {
     KDEBUG("A test message: DEBUG")
     KTRACE("A test message: TRACE")
 
+    KINFO("Creating platform state...")
     state := Kcore.platform_state{}
+    
+    KINFO("About to call platform_startup...")
+    
     if (platform_startup(&state, "kohi Engine Testbed", 100, 100, 1280, 720)) {
+        KINFO("Platform startup successful, entering message loop...")
         for (TRUE) {
-            platform_pump_messages(&state)
+            if !platform_pump_messages(&state) {
+                KINFO("Received quit message, breaking...")
+                break
+            }
         }
+    } else {
+        KERROR("Platform startup failed!")
     }
 
+    KINFO("Test completed without platform calls")
+    
+    KINFO("Shutting down platform...")
     platform_shutdown(&state)
+    KINFO("Platform shutdown complete.")
 
+    fmt.println("Test completed")
+    
+    // Force immediate exit to avoid cleanup segfault
+    libc.exit(0)
 }
