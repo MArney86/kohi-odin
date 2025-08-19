@@ -1,7 +1,6 @@
 package Engine
 
 import Kcore "./core"
-import Kasserts "./asserts" 
 import "base:runtime"
 import mem "core:mem"
 
@@ -59,7 +58,7 @@ when Kcore.KEXPORT {
             column = 0,
             procedure = "",
         }
-        Kasserts.KASSERT(string(expr), loc)
+        Kcore.KASSERT(string(expr), loc)
     }
     
     @(export, link_name="KASSERT_MSG")
@@ -72,7 +71,7 @@ when Kcore.KEXPORT {
             column = 0,
             procedure = "",
         }
-        Kasserts.KASSERT_MSG(string(expr), string(message), loc)
+        Kcore.KASSERT_MSG(string(expr), string(message), loc)
     }
     
     @(export, link_name="KASSERT_DEBUG")
@@ -85,7 +84,7 @@ when Kcore.KEXPORT {
             column = 0,
             procedure = "",
         }
-        Kasserts.KASSERT_DEBUG(string(expr), loc)
+        Kcore.KASSERT_DEBUG(string(expr), loc)
     }
 
 // KAPI exports for logging - call internal functions and recreate/cast types

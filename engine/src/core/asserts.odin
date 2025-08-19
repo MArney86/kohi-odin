@@ -1,7 +1,5 @@
-package Asserts
+package Kcore
 
-import Kdefines "../defines"
-import Kcore "../core"
 import "base:runtime"
 import "base:intrinsics"
 import "core:c/libc"
@@ -16,7 +14,7 @@ debug_break :: proc() {
 }
 
 report_assertion_failure :: proc(expression: string, message: string, file: string, line: i32) {
-    Kcore.log_output(Kcore.log_level.LOG_LEVEL_FATAL, "Assertion Failure: %s, message: '%s', in file: %s, line: %d\n", expression, message, file, line)
+    log_output(log_level.LOG_LEVEL_FATAL, "Assertion Failure: %s, message: '%s', in file: %s, line: %d\n", expression, message, file, line)
 }
 
 when KASSERTIONS_ENABLED {
