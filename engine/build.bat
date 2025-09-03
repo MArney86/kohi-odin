@@ -5,7 +5,7 @@ mkdir ..\bin
 
 SET assembly=engine
 REM SET -collection:<name>=<filepath>
-SET buildFlags=-build-mode:dll -debug -pdb-name:"../bin/engine.pdb" -define:KEXPORT=true
+SET buildFlags=-build-mode:dll -debug -pdb-name:"../bin/engine.pdb"
 SET outputFlag=-out:"../bin/engine.dll"
 
 ECHO "Building %assembly% with flags: %buildFlags%"

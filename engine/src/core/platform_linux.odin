@@ -1,3 +1,5 @@
+#+build !windows
+#+build !darwin
 package Kcore
 
 import mem "core:mem"
@@ -11,6 +13,7 @@ import corelibc "core:c/libc"
 when ODIN_OS == .Linux {
 
     // State Structure
+    @(private)
     internal_state :: struct {
         connection: ^xcb.connection_t,
         window: xcb.window_t,
@@ -19,6 +22,7 @@ when ODIN_OS == .Linux {
         wm_delete_win: xcb.atom_t,
     }
 
+    @(private)
     platform_startup :: proc(plat_state: ^platform_state, application_name: cstring, x: i32, y: i32, width: i32, height: i32) -> b8 {
         corelibc.printf("[DEBUG] platform_startup called\n")
         corelibc.fflush(nil)
@@ -162,6 +166,7 @@ when ODIN_OS == .Linux {
         return TRUE
     }
 
+    @(private)
     platform_shutdown :: proc(plat_state: ^platform_state) {
         state := cast(^internal_state)(plat_state.internal_state)
 
@@ -179,6 +184,7 @@ when ODIN_OS == .Linux {
         }
     }
 
+    @(private)
     platform_pump_messages :: proc(plat_state: ^platform_state) -> b8 {
         state := cast(^internal_state)(plat_state.internal_state)
         
@@ -233,7 +239,8 @@ when ODIN_OS == .Linux {
 
         return TRUE
     }
-    
+
+    @(private)
     platform_console_write :: proc(message: string, colour: u8) {
         // FATAL,ERROR,WARN,INFO,DEBUG,TRACE
         colour_strings := [6]cstring{"0;41", "1;31", "1;33", "1;32", "1;34", "1;30"}
@@ -245,6 +252,7 @@ when ODIN_OS == .Linux {
         }
     }
 
+    @(private)
     platform_console_write_error :: proc(message: string, colour: u8) {
         // FATAL,ERROR,WARN,INFO,DEBUG,TRACE
         colour_strings := [6]cstring{"0;41", "1;31", "1;33", "1;32", "1;34", "1;30"}
@@ -256,6 +264,7 @@ when ODIN_OS == .Linux {
         }
     }
 
+    @(private)
     platform_get_absolute_time :: proc() -> f64 {
         now: corelibc.timespec
         CLOCK_MONOTONIC :: 1  // Linux constant for monotonic clock
@@ -268,6 +277,7 @@ when ODIN_OS == .Linux {
         return cast(f64)now.tv_sec + cast(f64)now.tv_nsec / 1e9
     }
 
+    @(private)
     platform_sleep :: proc(ms: u64) {
         time.sleep(time.Duration(ms * cast(u64)time.Millisecond))
     }

@@ -3,16 +3,18 @@ package Kcore
 import "base:runtime"
 import "base:intrinsics"
 import "core:c/libc"
-import SC"core:strconv"
+import SC "core:strconv"
 
 // Assertion configuration
-KASSERTIONS_ENABLED :: true
+KASSERTIONS_ENABLED :: TRUE
 
 // Platform-agnostic debug break using Odin intrinsics
+@(private)
 debug_break :: proc() {
     intrinsics.debug_trap()
 }
 
+@(private)
 report_assertion_failure :: proc(expression: string, message: string, file: string, line: i32) {
     log_output(log_level.LOG_LEVEL_FATAL, "Assertion Failure: %s, message: '%s', in file: %s, line: %d\n", expression, message, file, line)
 }
@@ -26,7 +28,7 @@ when KASSERTIONS_ENABLED {
             debug_break()
         }
     }
-    
+
     KASSERT_MSG :: proc(expr: string, message: string, loc := #caller_location) {
         ok, _ := SC.parse_bool(expr)
         if !ok {
@@ -52,11 +54,11 @@ when KASSERTIONS_ENABLED {
     KASSERT :: proc(expr: bool, loc := #caller_location) {
         // does nothing
     }
-    
+
     KASSERT_MSG :: proc(expr: bool, message: string, loc := #caller_location) {
         // does nothing
     }
-    
+
     KASSERT_DEBUG :: proc(expr: bool, loc := #caller_location) {
         // does nothing
     }

@@ -1,3 +1,4 @@
+#+private
 package Kcore
 
 // Type aliases for common types
@@ -21,10 +22,6 @@ FALSE :: false
 #assert(size_of(i64) == 8, "I64 must be 8 bytes")
 #assert(size_of(f32) == 4, "F32 must be 4 bytes")
 #assert(size_of(f64) == 8, "F64 must be 8 bytes")
-
-
-
-
 
 // Platform detection - automatic based on ODIN_OS
 when ODIN_OS == .Windows {
@@ -75,10 +72,4 @@ when ODIN_OS == .Windows {
 } else {
     #panic("Unknown platform")
 }
-
-// API export/import attributes
-// In Odin, you typically use the foreign system for DLL imports/exports
-// and the export attribute for procedures you want to expose
-
-KEXPORT :: #config(KEXPORT, FALSE)
 

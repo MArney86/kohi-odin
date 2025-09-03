@@ -5,7 +5,7 @@ set -x
 mkdir -p ../bin
 
 assembly="engine"
-compilerFlags="-build-mode:dll -debug -define:KEXPORT=true"
+compilerFlags="-build-mode:so -debug"
 outputFile="../bin/lib$assembly.so"
 
 if ! command -v odin &> /dev/null; then

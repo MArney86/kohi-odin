@@ -1,3 +1,5 @@
+#+build !linux
+#+build !darwin
 package Kcore
 
 import mem "core:mem"
@@ -6,18 +8,21 @@ import win32 "core:sys/windows"
 
 // Windows layer
 when ODIN_OS == .Windows {
-    
+    @(private)
     internal_state :: struct {
         h_instance: win32.HINSTANCE,
         h_wnd:      win32.HWND,
     }
 
     //clock
+    @(private)
     clock_frequency: f64
+    @(private)
     start_time: win32.LARGE_INTEGER
 
 
     // Window message callback (CALLBACK = __stdcall)
+    @(private)
     win32_process_message :: proc "stdcall"(hwnd: win32.HWND, msg: u32, w_param: win32.WPARAM, lparam: win32.LPARAM) -> win32.LRESULT {
         switch msg {
             case win32.WM_ERASEBKGND:
@@ -69,6 +74,7 @@ when ODIN_OS == .Windows {
     
     // Platform-based application state functions
 
+    @(private)
     platform_startup :: proc(plat_state: ^platform_state, application_name: string, x: i32, y: i32, width: i32, height: i32) -> b8 {
         // Allocate memory for internal state using Odin allocator
         plat_state.internal_state, _ = mem.alloc(size_of(internal_state), align_of(internal_state))
@@ -163,6 +169,7 @@ when ODIN_OS == .Windows {
         return TRUE
     }
 
+    @(private)
     platform_shutdown :: proc(plat_state: ^platform_state) {
         state := cast(^internal_state)(plat_state.internal_state)
 
@@ -173,6 +180,7 @@ when ODIN_OS == .Windows {
         }
     }
 
+    @(private)
     platform_pump_messages :: proc(plat_state: ^platform_state) -> b8 {
         message := win32.MSG{}
         // Process all pending Windows messages
@@ -185,7 +193,7 @@ when ODIN_OS == .Windows {
     }
 
     // Platform-based console functions
-
+    @(private)
     platform_console_write :: proc(message: string, colour: u8) {
         console_handle: win32.HANDLE = win32.GetStdHandle(win32.STD_OUTPUT_HANDLE)
         if console_handle == nil {
@@ -202,6 +210,7 @@ when ODIN_OS == .Windows {
         win32.WriteConsoleW(console_handle, string_to_utf16(message), cast(win32.DWORD)length, &number_written^, nil)
     }
 
+    @(private)
     platform_console_write_error :: proc(message: string, colour: u8) {
         console_handle: win32.HANDLE = win32.GetStdHandle(win32.STD_ERROR_HANDLE)
         if console_handle == nil {
@@ -219,6 +228,7 @@ when ODIN_OS == .Windows {
     }
 
     // Platform-based time functions
+    @(private)
     platform_get_absolute_time :: proc() -> f64 {
         now_time: win32.LARGE_INTEGER
         win32.QueryPerformanceCounter(&now_time)
