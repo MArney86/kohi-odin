@@ -276,11 +276,6 @@ when ODIN_OS == .Linux {
 
         return cast(f64)now.tv_sec + cast(f64)now.tv_nsec / 1e9
     }
-
-    @(private)
-    platform_sleep :: proc(ms: u64) {
-        time.sleep(time.Duration(ms * cast(u64)time.Millisecond))
-    }
 }
 
 // Import clock_gettime from libc
@@ -290,4 +285,3 @@ foreign import libc "system:c"
 foreign libc {
     clock_gettime :: proc(clk_id: _c.int, tp: ^corelibc.timespec) -> _c.int ---
 }
-

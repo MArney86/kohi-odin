@@ -16,21 +16,32 @@ when ODIN_OS == .Windows {
 }
 
 foreign Engine {
-    application_create :: proc "c" (game_inst: ^Types.game) -> b8 ---
+    /* Application Layer */
+    application_create :: proc "c" (game_inst: rawptr) -> b8 ---
     application_run :: proc "c" () -> b8 ---
+    
+    /* Platform Layer */
+    platform_allocate :: proc "c" (size: u64, aligned: b8) -> rawptr ---
+    platform_free :: proc "c" (block: rawptr, aligned: b8) ---
+    
+    /* Logger functions */
     KFATAL :: proc "c" (msg: cstring) ---
     KINFO :: proc "c" (msg: cstring) ---
+    KDEBUG :: proc "c" (msg: cstring) ---
 }
 
 main :: proc() {
 
+    //create the game instance
     game_inst: Types.game
 
+    //populate the game instance
     if !create_game(&game_inst) {
         KFATAL(cstring("Could not create game!"))
         return
     }
 
+    //ensure all required function pointers are set
     if game_inst.initialize == nil || 
        game_inst.update == nil || 
        game_inst.render == nil || 
@@ -39,11 +50,13 @@ main :: proc() {
         return
     }
 
+    //create the application
     if !application_create(&game_inst) {
         KINFO(cstring("Application failed to create!"))
         return
     }
 
+    //run the application
     if !application_run() {
         KINFO(cstring("Application did not shutdown gracefully"))
         return

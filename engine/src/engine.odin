@@ -13,6 +13,9 @@ FALSE :: false
 import Kcore "./core"
 import Types "./types"
 
+// Exports for externally accessible game engine functionalities
+
+//Assertions - accessible when KASSERTIONS_ENABLED is true
 when Kcore.KASSERTIONS_ENABLED {
     @(export)
     KASSERT :: proc "c" (expr: cstring, loc:= #caller_location) {
@@ -33,6 +36,7 @@ when Kcore.KASSERTIONS_ENABLED {
     }
 }
 
+// KAPI exports for logging
 @(export)
 KFATAL :: proc "c" (msg: cstring) {
     context = runtime.default_context()
@@ -69,10 +73,12 @@ KTRACE :: proc "c" (msg: cstring) {
     Kcore.log_output(Kcore.log_level.LOG_LEVEL_TRACE, string(msg))
 }
 
+// Application Layer exports
 @(export)
-application_create :: proc "c" (game_inst: ^Types.game) -> b8 {
+application_create :: proc "c" (game_inst: rawptr) -> b8 {
     context = runtime.default_context()
-    return Kcore.application_create(game_inst)
+    game := cast(^Types.game)game_inst
+    return Kcore.application_create(game)
 }
 
 @(export)
@@ -81,6 +87,7 @@ application_run :: proc "c" () -> b8 {
     return Kcore.application_run()
 }
 
+// Temporary platform memory allocation functions
 @(export)
 platform_allocate :: proc "c" (size: u64, aligned: b8) -> rawptr {
     context = runtime.default_context()

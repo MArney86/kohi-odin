@@ -5,7 +5,7 @@ set -x
 mkdir -p ../bin
 
 assembly="engine"
-compilerFlags="-build-mode:so -debug"
+compilerFlags="-build-mode:shared -debug"
 outputFile="../bin/lib$assembly.so"
 
 if ! command -v odin &> /dev/null; then
