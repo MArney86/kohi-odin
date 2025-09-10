@@ -45,8 +45,8 @@ platform_copy_memory :: proc(dest: rawptr, source: rawptr, size: u64) -> rawptr 
 }
 
 @(private)
-platform_set_memory :: proc(dest: rawptr, value: u8, size: u64) -> rawptr {
-    return mem.set(dest, value, cast(int)size)
+platform_set_memory :: proc(dest: rawptr, value: i32, size: u64) -> rawptr {
+    return mem.set(dest, cast(byte)value, cast(int)size)
 }
 
 @(private)

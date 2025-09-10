@@ -1,6 +1,8 @@
 package Engine
 
 import runtime "base:runtime"
+import strings "core:strings"
+import types "./types"
 
 // Boolean types
 INT :: b32
@@ -18,19 +20,19 @@ import Types "./types"
 //Assertions - accessible when KASSERTIONS_ENABLED is true
 when Kcore.KASSERTIONS_ENABLED {
     @(export)
-    KASSERT :: proc "c" (expr: cstring, loc:= #caller_location) {
+    KAPI_ASSERT :: proc "c" (expr: cstring, loc:= #caller_location) {
         context = runtime.default_context()
         Kcore.KASSERT(string(expr), loc)
     }
 
     @(export)
-    KASSERT_MSG :: proc "c" (expr: cstring, message: cstring, loc:= #caller_location) {
+    KAPI_ASSERT_MSG :: proc "c" (expr: cstring, message: cstring, loc:= #caller_location) {
         context = runtime.default_context()
         Kcore.KASSERT_MSG(string(expr), string(message), loc)
     }
 
     @(export)
-    KASSERT_DEBUG :: proc "c" (expr: cstring, loc:= #caller_location) {
+    KAPI_ASSERT_DEBUG :: proc "c" (expr: cstring, loc:= #caller_location) {
         context = runtime.default_context()
         Kcore.KASSERT_DEBUG(string(expr), loc)
     }
@@ -38,64 +40,104 @@ when Kcore.KASSERTIONS_ENABLED {
 
 // KAPI exports for logging
 @(export)
-KFATAL :: proc "c" (msg: cstring) {
+KAPI_FATAL :: proc "c" (msg: cstring) {
     context = runtime.default_context()
     Kcore.log_output(Kcore.log_level.LOG_LEVEL_FATAL, string(msg))
 }
 
 @(export)
-KERROR :: proc "c" (msg: cstring) {
+KAPI_ERROR :: proc "c" (msg: cstring) {
     context = runtime.default_context()
     Kcore.log_output(Kcore.log_level.LOG_LEVEL_ERROR, string(msg))
 }
 
 @(export)
-KWARN :: proc "c" (msg: cstring) {
+KAPI_WARN :: proc "c" (msg: cstring) {
     context = runtime.default_context()
     Kcore.log_output(Kcore.log_level.LOG_LEVEL_WARN, string(msg))
 }
 
 @(export)
-KINFO :: proc "c" (msg: cstring) {
+KAPI_INFO :: proc "c" (msg: cstring) {
     context = runtime.default_context()
     Kcore.log_output(Kcore.log_level.LOG_LEVEL_INFO, string(msg))
 }
 
 @(export)
-KDEBUG :: proc "c" (msg: cstring) {
+KAPI_DEBUG :: proc "c" (msg: cstring) {
     context = runtime.default_context()
     Kcore.log_output(Kcore.log_level.LOG_LEVEL_DEBUG, string(msg))
 }
 
 @(export)
-KTRACE :: proc "c" (msg: cstring) {
+KAPI_TRACE :: proc "c" (msg: cstring) {
     context = runtime.default_context()
     Kcore.log_output(Kcore.log_level.LOG_LEVEL_TRACE, string(msg))
 }
 
 // Application Layer exports
 @(export)
-application_create :: proc "c" (game_inst: rawptr) -> b8 {
+KAPI_application_create :: proc "c" (game_inst: rawptr) -> b8 {
     context = runtime.default_context()
     game := cast(^Types.game)game_inst
     return Kcore.application_create(game)
 }
 
 @(export)
-application_run :: proc "c" () -> b8 {
+KAPI_application_run :: proc "c" () -> b8 {
     context = runtime.default_context()
     return Kcore.application_run()
 }
 
-// Temporary platform memory allocation functions
+// Memory Management 
 @(export)
-platform_allocate :: proc "c" (size: u64, aligned: b8) -> rawptr {
+KAPI_initialize_memory :: proc "c" () {
     context = runtime.default_context()
-    return Kcore.platform_allocate(size, aligned)
+    Kcore.initialize_memory()
 }
 
 @(export)
-platform_free :: proc "c" (block: rawptr, aligned: b8) {
+KAPI_shutdown_memory :: proc "c" () {
     context = runtime.default_context()
-    Kcore.platform_free(block, aligned)
-} 
+    Kcore.shutdown_memory()
+}
+
+@(export)
+KAPI_allocate :: proc "c" (size: u64, tag: types.memory_tag) -> rawptr {
+    context = runtime.default_context()
+    return Kcore.Kallocate(size, tag)
+}
+
+@(export)
+KAPI_free :: proc "c" (block: rawptr, size: u64, tag: types.memory_tag) {
+    context = runtime.default_context()
+    Kcore.Kfree(block, size, tag)
+}
+
+@(export)
+KAPI_zero_memory :: proc "c" (block: rawptr, size: u64) -> rawptr {
+    context = runtime.default_context()
+    return Kcore.Kzero_memory(block, size)
+}
+
+@(export)
+KAPI_copy_memory :: proc "c" (dest: rawptr, src: rawptr, size: u64) -> rawptr {
+    context = runtime.default_context()
+    return Kcore.Kcopy_memory(dest, src, size)
+}
+
+@(export)
+KAPI_set_memory :: proc "c" (dest: rawptr, value: i32, size: u64) -> rawptr {
+    context = runtime.default_context()
+    return Kcore.Kset_memory(dest, value, size)
+}
+
+@(export)
+KAPI_get_memory_usage_str :: proc "c" () -> cstring {
+    context = runtime.default_context()
+    mem_str, err:= strings.clone_to_cstring(Kcore.get_memory_usage_str())
+    if err != nil {
+        return cstring("Error retrieving memory usage string")
+    }
+    return mem_str
+}

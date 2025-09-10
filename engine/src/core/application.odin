@@ -42,7 +42,7 @@ application_create :: proc "odin" (game_inst: ^Types.game) -> b8 {
     app_state.is_suspended = FALSE
 
     if !platform_startup(&app_state.platform, 
-                         strings.clone_to_cstring(game_inst.app_config.name), 
+                         game_inst.app_config.name, 
                          cast(i32)game_inst.app_config.start_pos_x, 
                          cast(i32)game_inst.app_config.start_pos_y, 
                          cast(i32)game_inst.app_config.width, 
@@ -58,6 +58,8 @@ application_create :: proc "odin" (game_inst: ^Types.game) -> b8 {
 }
 
 application_run :: proc "odin" () -> b8 {
+    KINFO(get_memory_usage_str())
+    
     for app_state.is_running {
         if !platform_pump_messages(&app_state.platform) {
             app_state.is_running = FALSE
