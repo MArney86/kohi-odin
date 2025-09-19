@@ -1,4 +1,4 @@
-package Types
+package types
 
 memory_tag :: enum {
     // Temporary use. Should be assigned one of the tags below or new one added.

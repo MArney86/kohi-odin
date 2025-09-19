@@ -1,5 +1,5 @@
 #+private
-package Kcore
+package core
 
 // Type aliases for common types
 

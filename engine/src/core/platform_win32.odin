@@ -1,10 +1,11 @@
 #+build !linux
 #+build !darwin
-package Kcore
+package core
 
 import mem "core:mem"
 import utf16 "core:unicode/utf16"
 import win32 "core:sys/windows"
+import helpers "../../../libs/helpers"
 
 // Windows layer
 when ODIN_OS == .Windows {
@@ -83,7 +84,7 @@ when ODIN_OS == .Windows {
         state.h_instance = cast(win32.HANDLE)(win32.GetModuleHandleW(nil))
 
         // Load default icon
-        icon: win32.HICON = win32.LoadIconW(state.h_instance, string_to_utf16("IDI_APPLICATION"))
+        icon: win32.HICON = win32.LoadIconW(state.h_instance, helpers.string_to_utf16("IDI_APPLICATION"))
 
         // Register window class
         wc := win32.WNDCLASSW{}
@@ -96,9 +97,9 @@ when ODIN_OS == .Windows {
         wc.hIcon = icon
         wc.hCursor = win32.LoadCursorW(nil, string_to_utf16("IDC_ARROW"))
         wc.hbrBackground = nil
-        wc.lpszClassName = string_to_utf16("kohi_window_class")
+        wc.lpszClassName = helpers.string_to_utf16("kohi_window_class")
         if win32.RegisterClassW(&wc) == 0 {
-            win32.MessageBoxW(nil, string_to_utf16("Window registration failed!"), string_to_utf16("Error"), win32.MB_ICONEXCLAMATION | win32.MB_OK)
+            win32.MessageBoxW(nil, helpers.string_to_utf16("Window registration failed!"), helpers.string_to_utf16("Error"), win32.MB_ICONEXCLAMATION | win32.MB_OK)
             return FALSE
         }
         // create window
@@ -136,15 +137,15 @@ when ODIN_OS == .Windows {
         
         handle: win32.HWND = win32.CreateWindowExW(
             window_ex_style,
-            string_to_utf16("kohi_window_class"),
-            string_to_utf16(application_name),
+            helpers.string_to_utf16("kohi_window_class"),
+            helpers.string_to_utf16(application_name),
             window_style,
             window_x, window_y,
             window_width, window_height,
             nil, nil, state.h_instance, nil)
         
         if handle == nil {
-            win32.MessageBoxW(nil, string_to_utf16("Window creation failed!"), string_to_utf16("Error"), win32.MB_ICONEXCLAMATION | win32.MB_OK)
+            win32.MessageBoxW(nil, helpers.string_to_utf16("Window creation failed!"), helpers.string_to_utf16("Error"), win32.MB_ICONEXCLAMATION | win32.MB_OK)
 
             KFATAL("Window creation failed!")
             return FALSE
@@ -204,10 +205,10 @@ when ODIN_OS == .Windows {
         levels := [6]u16{64, 4, 6, 2, 1, 8}
         win32.SetConsoleTextAttribute(console_handle, levels[colour])
 
-        win32.OutputDebugStringW(string_to_utf16(message))
+        win32.OutputDebugStringW(helpers.string_to_utf16(message))
         length: int = len(message)
         number_written: win32.LPDWORD = cast(win32.LPDWORD)(nil)
-        win32.WriteConsoleW(console_handle, string_to_utf16(message), cast(win32.DWORD)length, &number_written^, nil)
+        win32.WriteConsoleW(console_handle, helpers.string_to_utf16(message), cast(win32.DWORD)length, &number_written^, nil)
     }
 
     @(private)
@@ -221,10 +222,10 @@ when ODIN_OS == .Windows {
         levels := [6]u16{64, 4, 6, 2, 1, 8}
         win32.SetConsoleTextAttribute(console_handle, levels[colour])
 
-        win32.OutputDebugStringW(string_to_utf16(message))
+        win32.OutputDebugStringW(helpers.string_to_utf16(message))
         length: int = len(message)
         number_written: win32.LPDWORD = cast(win32.LPDWORD)(nil)
-        win32.WriteConsoleW(console_handle, string_to_utf16(message), cast(win32.DWORD)length, &number_written^, nil)
+        win32.WriteConsoleW(console_handle, helpers.string_to_utf16(message), cast(win32.DWORD)length, &number_written^, nil)
     }
 
     // Platform-based time functions

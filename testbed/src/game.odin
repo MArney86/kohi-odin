@@ -1,6 +1,10 @@
-package Testbed
+package testbed
 
-import "core:fmt"
+import fmt "core:fmt"
+import strings "core:strings"
+import strconv "core:strconv"
+import os "core:os"
+import mem "core:mem"
 
 import types "../../engine/src/types"
 
@@ -33,17 +37,17 @@ create_game :: proc(out_game: ^types.game) -> b8 {
 // game initialization function
 game_initialize :: proc(game_inst: ^types.game) -> b8 {
     KDEBUG("Game Initialized")
-   return TRUE
+    return TRUE
 }
 
 // game update function
 game_update :: proc(game_inst: ^types.game, delta_time: f32) -> b8 {
-   return TRUE
+    return TRUE
 }
 
 // game render function
 game_render :: proc(game_inst: ^types.game, delta_time: f32) -> b8 {
-   return TRUE
+    return TRUE
 }
 
 // game resize function

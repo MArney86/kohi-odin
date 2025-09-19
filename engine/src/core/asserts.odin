@@ -1,4 +1,4 @@
-package Kcore
+package core
 
 import "base:runtime"
 import "base:intrinsics"
@@ -20,6 +20,7 @@ report_assertion_failure :: proc(expression: string, message: string, file: stri
 }
 
 when KASSERTIONS_ENABLED {
+    @(export)
     KASSERT :: proc(expr: string, loc := #caller_location) {
         // Parse the expression string into a bool, ignore any parse error
         ok, _ := SC.parse_bool(expr)
@@ -28,7 +29,7 @@ when KASSERTIONS_ENABLED {
             debug_break()
         }
     }
-
+    @(export)
     KASSERT_MSG :: proc(expr: string, message: string, loc := #caller_location) {
         ok, _ := SC.parse_bool(expr)
         if !ok {
@@ -38,6 +39,7 @@ when KASSERTIONS_ENABLED {
     }
     
     when ODIN_DEBUG {
+        @(export)
         KASSERT_DEBUG :: proc(expr: string, loc := #caller_location) {
             ok, _ := SC.parse_bool(expr)
             if !ok {
@@ -46,19 +48,23 @@ when KASSERTIONS_ENABLED {
             }
         }
     } else {
+        @(export)
         KASSERT_DEBUG :: proc(expr: bool, loc := #caller_location) {
             // does nothing
         }
     }
 } else {
+    @(export)
     KASSERT :: proc(expr: bool, loc := #caller_location) {
         // does nothing
     }
 
+    @(export)
     KASSERT_MSG :: proc(expr: bool, message: string, loc := #caller_location) {
         // does nothing
     }
 
+    @(export)
     KASSERT_DEBUG :: proc(expr: bool, loc := #caller_location) {
         // does nothing
     }

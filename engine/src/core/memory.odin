@@ -1,4 +1,4 @@
-package Kcore
+package core
 
 import strings "core:strings"
 import fmt "core:fmt"
@@ -11,14 +11,17 @@ memory_stats :: struct {
 
 @(private) stats := memory_stats{}
 
+@(export)
 initialize_memory :: proc() {
     platform_zero_memory(&stats, size_of(stats));
 }
 
+@(export)
 shutdown_memory :: proc() {
     //does nothing yet
 }
 
+@(export)
 Kallocate :: proc(size: u64, tag: types.memory_tag) -> rawptr {
     if tag == types.memory_tag.MEMORY_TAG_UNKNOWN {
         KWARN("Kallocate called with MEMORY_TAG_UNKNOWN. Re-class this allocation.")
@@ -32,6 +35,7 @@ Kallocate :: proc(size: u64, tag: types.memory_tag) -> rawptr {
     return block
 }
 
+@(export)
 Kfree :: proc(block: rawptr, size: u64, tag: types.memory_tag) {
     if tag == types.memory_tag.MEMORY_TAG_UNKNOWN {
         KWARN("Kfree called with MEMORY_TAG_UNKNOWN. Re-class this deallocation.")
@@ -43,18 +47,22 @@ Kfree :: proc(block: rawptr, size: u64, tag: types.memory_tag) {
     platform_free(block, FALSE)
 }
 
+@(export)
 Kzero_memory :: proc(block: rawptr, size: u64) -> rawptr {
     return platform_zero_memory(block, size)
 }
 
+@(export)
 Kcopy_memory :: proc(dest: rawptr, src: rawptr, size: u64) -> rawptr {
     return platform_copy_memory(dest, src, size)
 }
 
+@(export)
 Kset_memory :: proc(dest: rawptr, value: i32, size: u64) -> rawptr {
     return platform_set_memory(dest, value, size)
 }
 
+@(export)
 get_memory_usage_str :: proc () -> string {
     output_str_builder: strings.Builder
     strings.builder_init(&output_str_builder, context.temp_allocator)

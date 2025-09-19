@@ -1,4 +1,4 @@
-package Kcore
+package core
 
 import utf16 "core:unicode/utf16"
 import mem "core:mem"
@@ -25,11 +25,13 @@ string_to_utf16 :: proc(str: string) -> ^u16 {
     return &utf16_slice[0]
 }
 
+@(private)
 platform_allocate :: proc(size: u64, aligned: b8) -> rawptr {
     new_mem, _ := mem.alloc(cast(int)size)
     return new_mem
 }
 
+@(private)
 platform_free :: proc(block: rawptr, aligned: b8) {
     mem.free(block)
 }

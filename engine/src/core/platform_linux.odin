@@ -1,14 +1,14 @@
 #+build !windows
 #+build !darwin
-package Kcore
+package core
 
+import os "core:os"
+import fmt "core:fmt"
 import mem "core:mem"
 import _c "core:c"
-import gnulinux "core:sys/linux"
-import x11 "vendor:x11/xlib"
 import xcb "../../../libs/X11/xcb"
-import "core:time"
 import corelibc "core:c/libc"
+import strings "core:strings"
 
 when ODIN_OS == .Linux {
 
@@ -23,9 +23,8 @@ when ODIN_OS == .Linux {
     }
 
     @(private)
-    platform_startup :: proc(plat_state: ^platform_state, application_name: cstring, x: i32, y: i32, width: i32, height: i32) -> b8 {
-        corelibc.printf("[DEBUG] platform_startup called\n")
-        corelibc.fflush(nil)
+    platform_startup :: proc(plat_state: ^platform_state, application_name: string, x: i32, y: i32, width: i32, height: i32) -> b8 {
+        fmt.printf("[DEBUG] platform_startup called\n")
 
         plat_state.internal_state, _ = mem.alloc(size_of(internal_state), align_of(internal_state))
         state: ^internal_state = cast(^internal_state)(plat_state.internal_state)
@@ -35,7 +34,7 @@ when ODIN_OS == .Linux {
         state.connection = xcb.connect(nil, &screen_p)
         
         if xcb.connection_has_error(state.connection) != 0 {
-            corelibc.printf("[ERROR] Failed to connect to X server via XCB\n")
+            fmt.printf("[ERROR] Failed to connect to X server via XCB\n")
             return FALSE
         }
         
@@ -46,7 +45,7 @@ when ODIN_OS == .Linux {
         // Get setup and screen
         setup := xcb.get_setup(state.connection)
         if setup == nil {
-            corelibc.printf("[ERROR] Failed to get XCB setup\n")
+            fmt.printf("[ERROR] Failed to get XCB setup\n")
             return FALSE
         }
         
@@ -56,9 +55,8 @@ when ODIN_OS == .Linux {
         }
         state.screen = it.data
 
-        corelibc.printf("[DEBUG] Creating window...\n")
-        corelibc.fflush(nil)
-
+        fmt.printf("[DEBUG] Creating window...\n")
+        
         // Generate window ID
         state.window = xcb.generate_id(state.connection)
         
@@ -87,11 +85,15 @@ when ODIN_OS == .Linux {
             event_mask,                       // value mask
             raw_data(value_list[:]))          // value list
 
-        corelibc.printf("[DEBUG] Window created, setting up window manager protocols...\n")
-        corelibc.fflush(nil)
+        fmt.printf("[DEBUG] Window created, setting up window manager protocols...\n")
 
         // Set window title
-        app_name_len := corelibc.strlen(application_name)
+        app_name_len := len(application_name)
+        c_name, err := strings.clone_to_cstring(application_name)
+        if err != nil {
+            fmt.printf("[ERROR] Failed to convert application name to C string: %s\n", err)
+            return FALSE
+        }
         xcb.change_property(
             state.connection,
             cast(u8)xcb.prop_mode_t.PROP_MODE_REPLACE,
@@ -100,7 +102,7 @@ when ODIN_OS == .Linux {
             cast(u32)xcb.atom_enum_t.ATOM_STRING,
             8,
             cast(u32)app_name_len,
-            raw_data(cast(string)application_name))
+            &c_name)
 
         // Set up WM_DELETE_WINDOW protocol
         wm_delete_str: cstring = "WM_DELETE_WINDOW"
@@ -129,7 +131,7 @@ when ODIN_OS == .Linux {
             nil)
 
         if wm_delete_reply == nil || wm_protocols_reply == nil {
-            corelibc.printf("[ERROR] Failed to get atom replies\n")
+            fmt.printf("[ERROR] Failed to get atom replies\n")
             return FALSE
         }
 
@@ -147,28 +149,32 @@ when ODIN_OS == .Linux {
             &wm_delete_reply.atom)
 
         // Free the atom replies
-        corelibc.free(wm_delete_reply)
-        corelibc.free(wm_protocols_reply)
-        
+        if wm_delete_reply != nil {
+            KINFO("Freeing atom reply1")
+            corelibc.free(wm_delete_reply)
+        }
+        if wm_protocols_reply != nil {
+            KINFO("Freeing atom reply2")
+            corelibc.free(wm_protocols_reply)
+        }
         // Map the window (make it visible)
         xcb.map_window(state.connection, state.window)
         
         // Flush all requests to X server
         stream_result := xcb.flush(state.connection)
         if stream_result <= 0 {
-            corelibc.printf("[ERROR] Failed to flush XCB stream: %d\n", stream_result)
+            fmt.printf("[ERROR] Failed to flush XCB stream: %d\n", stream_result)
             return FALSE
         }
 
-        corelibc.printf("[DEBUG] Window should now be visible!\n")
-        corelibc.fflush(nil)
+        fmt.printf("[DEBUG] Window should now be visible!\n")
         
         return TRUE
     }
 
     @(private)
     platform_shutdown :: proc(plat_state: ^platform_state) {
-        state := cast(^internal_state)(plat_state.internal_state)
+        state: ^internal_state = cast(^internal_state)(plat_state.internal_state)
 
         if state != nil {
             // Restore auto-repeat
@@ -179,7 +185,9 @@ when ODIN_OS == .Linux {
                 xcb.disconnect(state.connection)
             }
 
+            KINFO("Freeing platform internal state")
             mem.free(plat_state.internal_state)
+            KINFO("Platform internal state freed")
             plat_state.internal_state = nil
         }
     }
@@ -205,6 +213,7 @@ when ODIN_OS == .Linux {
                     // Handle window close
                     client_event := cast(^xcb.client_message_event_t)event
                     if client_event.data.data32[0] == state.wm_delete_win {
+                        KINFO("Received WM_DELETE_WINDOW event, shutting down...")
                         corelibc.free(event)
                         return FALSE // Indicate shutdown
                     }
@@ -234,7 +243,10 @@ when ODIN_OS == .Linux {
             }
 
             // Free event
-            corelibc.free(event)
+            if event != nil {
+                KINFO("Freeing XCB event")
+                corelibc.free(event)
+            }
         }
 
         return TRUE
@@ -243,24 +255,29 @@ when ODIN_OS == .Linux {
     @(private)
     platform_console_write :: proc(message: string, colour: u8) {
         // FATAL,ERROR,WARN,INFO,DEBUG,TRACE
-        colour_strings := [6]cstring{"0;41", "1;31", "1;33", "1;32", "1;34", "1;30"}
+        colour_strings := [6]string{"0;41", "1;31", "1;33", "1;32", "1;34", "1;30"}
         
         if colour < len(colour_strings) {
-            corelibc.printf("\033[%sm%s\033[0m", colour_strings[colour], raw_data(message))
+            fmt.printf("\033[%sm%s\033[0m", colour_strings[colour], message)
+            os.flush(os.stdout)
         } else {
-            corelibc.printf("%s", raw_data(message))
+            fmt.printf(message)
+            os.flush(os.stdout)
         }
     }
 
     @(private)
     platform_console_write_error :: proc(message: string, colour: u8) {
+        temp := colour
         // FATAL,ERROR,WARN,INFO,DEBUG,TRACE
-        colour_strings := [6]cstring{"0;41", "1;31", "1;33", "1;32", "1;34", "1;30"}
+        colour_strings := [6]string{"0;41", "1;31", "1;33", "1;32", "1;34", "1;30"}
         
         if colour < len(colour_strings) {
-            corelibc.fprintf(corelibc.stderr, "\033[%sm%s\033[0m", colour_strings[colour], raw_data(message))
+            fmt.eprintf("\033[%sm%s\033[0m", colour_strings[colour], message)
+            os.flush(os.stderr)
         } else {
-            corelibc.fprintf(corelibc.stderr, "%s", raw_data(message))
+            fmt.eprintf(message)
+            os.flush(os.stderr)
         }
     }
 

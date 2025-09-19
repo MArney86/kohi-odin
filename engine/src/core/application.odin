@@ -1,4 +1,4 @@
-package Kcore
+package core
 
 import Types "../types"
 import strings "core:strings"
@@ -19,6 +19,7 @@ initialized: b8 = FALSE
 @(private)
 app_state := application_state{}
 
+@(export)
 application_create :: proc "odin" (game_inst: ^Types.game) -> b8 {
     if initialized {
         KERROR("application_create called more than once.")
@@ -57,6 +58,7 @@ application_create :: proc "odin" (game_inst: ^Types.game) -> b8 {
     return TRUE
 }
 
+@(export)
 application_run :: proc "odin" () -> b8 {
     KINFO(get_memory_usage_str())
     

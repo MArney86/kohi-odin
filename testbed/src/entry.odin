@@ -1,13 +1,29 @@
-package Testbed
+package testbed
 
-import "core:mem"
 import types "../../engine/src/types"
+
+import os "core:os"
+import mem "core:mem"
+import fmt "core:fmt"
+import strings "core:strings"
+import strconv "core:strconv"
 
 // Boolean constants
 TRUE :: true
 FALSE :: false
 
+@(private)
+version_file := "APIversion.txt"
+
 main :: proc() {
+    
+    //Load shared libraries
+    kohi_ok := load_kohi_api()
+    if !kohi_ok {
+        fmt.eprintf("Could not load kohi engine API!\n")
+        return
+    }
+
     //initialize memory management
     initialize_memory()
 
@@ -43,4 +59,5 @@ main :: proc() {
 
     //shutdown memory management
     shutdown_memory()
+    unload_kohi_api()
 }

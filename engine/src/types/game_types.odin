@@ -1,4 +1,4 @@
-package Types
+package types
 application_config :: struct {
     start_pos_x: i16,
     start_pos_y: i16,

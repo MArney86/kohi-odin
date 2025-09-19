@@ -1,4 +1,4 @@
-package Kcore
+package core
 
 import "core:fmt"
 import "base:runtime"
@@ -22,6 +22,7 @@ when ODIN_DEBUG {
     LOG_TRACE_ENABLED :: FALSE
 }
 
+@(private)
 log_level :: enum {
     LOG_LEVEL_FATAL,
     LOG_LEVEL_ERROR,
@@ -43,6 +44,7 @@ shutdown_logging :: proc() {
 }
 
 // Internal logging function
+@(private)
 log_output :: proc(level: log_level, message: string, args: ..any) {
     is_error: b8 = level < log_level.LOG_LEVEL_WARN;
 
@@ -74,25 +76,25 @@ log_output :: proc(level: log_level, message: string, args: ..any) {
 }
 
 // Logs a fatal level message.
-@(private)
+@(export)
 KFATAL :: proc(message: string, args: ..any) {
     log_output(log_level.LOG_LEVEL_FATAL, message, ..args)
 }
 
 // Logs an error-level message
-@(private)
+@(export)
 KERROR :: proc(message: string, args: ..any) {
     log_output(log_level.LOG_LEVEL_ERROR, message, ..args)
 }
 
 // Logs a warning-level message
 when LOG_WARN_ENABLED {
-    @(private)
+    @(export)
     KWARN :: proc(message: string, args: ..any) {
         log_output(log_level.LOG_LEVEL_WARN, message, ..args)
     }
 } else {
-    @(private)
+    @(export)
     KWARN :: proc(message: string, args: ..any) {
         // Does nothing when LOG_WARN_ENABLED != true
     }
@@ -100,12 +102,12 @@ when LOG_WARN_ENABLED {
 
 // Logs an info-level message
 when LOG_INFO_ENABLED {
-    @(private)
+    @(export)
     KINFO :: proc(message: string, args: ..any) {
         log_output(log_level.LOG_LEVEL_INFO, message, ..args)
     }
 } else {
-    @(private)
+    @(export)
     KINFO :: proc(message: string, args: ..any) {
         // Does nothing when LOG_INFO_ENABLED != true
     }
@@ -113,12 +115,12 @@ when LOG_INFO_ENABLED {
 
 // Logs a debug-level message
 when LOG_DEBUG_ENABLED {
-    @(private)
+    @(export)
     KDEBUG :: proc(message: string, args: ..any) {
         log_output(log_level.LOG_LEVEL_DEBUG, message, ..args)
     }
 } else {
-    @(private)
+    @(export)
     KDEBUG :: proc(message: string, args: ..any) {
         // Does nothing when LOG_DEBUG_ENABLED != true
     }
@@ -126,12 +128,12 @@ when LOG_DEBUG_ENABLED {
 
 // Logs a trace-level message
 when LOG_TRACE_ENABLED {
-    @(private)
+    @(export)
     KTRACE :: proc(message: string, args: ..any) {
         log_output(log_level.LOG_LEVEL_TRACE, message, ..args)
     }
 } else {
-    @(private)
+    @(export)
     KTRACE :: proc(message: string, args: ..any) {
         // Does nothing when LOG_TRACE_ENABLED != true
     }
