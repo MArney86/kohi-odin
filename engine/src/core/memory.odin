@@ -3,6 +3,7 @@ package core
 import strings "core:strings"
 import fmt "core:fmt"
 import types "../types"
+import runtime "base:runtime"
 
 memory_stats :: struct {
     total_allocated: u64,
@@ -19,6 +20,28 @@ initialize_memory :: proc() {
 @(export)
 shutdown_memory :: proc() {
     //does nothing yet
+}
+
+@(export)
+Knew :: proc($T: typeid, tag: types.memory_tag) -> ^T {
+    ptr, all_err := new(T)
+    if all_err != runtime.Allocator_Error.None {
+        KFATAL("KNew failed to allocate memory for type %v", typeid_of(T))
+        return nil
+    }
+    added: u64 = u64(size_of(T))
+    stats.total_allocated += added
+    stats.tagged_allocations[tag] += added
+    return cast(^T)ptr
+}
+
+Kdelete :: proc{
+    Kdelete_Darray,
+}
+
+@(export)
+Kdelete_Darray :: proc(array: ^[dynamic]$T) {
+    _delete_DArray(array)
 }
 
 @(export)
@@ -79,4 +102,24 @@ get_memory_usage_str :: proc () -> string {
         }
     }
     return fmt.sbprintf(&output_str_builder, "%s:\t\t\t%M", "Total Allocated", stats.total_allocated)
+}
+
+//Kdelete Variants
+@(private="file")
+_delete_DArray :: proc(array: ^[dynamic]$T) {
+    array := array
+    size: u64 = u64(cap(array) * size_of(T))
+    used: u64 = u64(len(array) * size_of(T))
+    if array == nil {
+        return
+    }
+    err := delete(array^)
+    if err != runtime.Allocator_Error.None {
+        KFATAL("Kdelete failed to free DArray of type %v", typeid_of(T))
+        return
+    }
+    stats.total_allocated -= size
+    stats.tagged_allocations[cast(int)types.memory_tag.MEMORY_TAG_DARRAY] -= size
+    stats.tagged_allocations[cast(int)types.memory_tag.MEMORY_TAG_DARRAY_USED] -= used
+
 }

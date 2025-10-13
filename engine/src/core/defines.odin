@@ -5,7 +5,7 @@ package core
 
 // Boolean types
 INT :: b32
-CHAR :: b8
+CHAR :: u8
 
 // Boolean constants
 TRUE :: true

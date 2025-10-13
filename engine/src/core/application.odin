@@ -42,6 +42,11 @@ application_create :: proc "odin" (game_inst: ^Types.game) -> b8 {
     app_state.is_running = TRUE
     app_state.is_suspended = FALSE
 
+    if !event_initialize() {
+        KERROR("Event system failed initialization. Application cannot continue.")
+        return FALSE
+    }
+
     if !platform_startup(&app_state.platform, 
                          game_inst.app_config.name, 
                          cast(i32)game_inst.app_config.start_pos_x, 
@@ -83,6 +88,8 @@ application_run :: proc "odin" () -> b8 {
     }
 
     app_state.is_running = FALSE
+
+    event_shutdown()
 
     platform_shutdown(&app_state.platform)
 

@@ -16,20 +16,20 @@ else
 fi
 
 
-MAJSEARCH="KAPI_VERSION: u8 ="
-MAJORVER=$(grep "$MAJSEARCH" "$VERSION_FILE" | cut -d' ' -f)
+MAJSEARCH="KAPI_VERSION:"
+MAJORVER=$(grep "$MAJSEARCH" "$VERSION_FILE" | sed 's/.*= *//' | tr -d ' \r')
 if [[ -z "$MAJORVER" || ! "$MAJORVER" =~ ^[0-9]+$ ]]; then
     echo "Error: Could not extract a valid number for KAPI_VERSION"
     exit 1
 fi
-SUBSEARCH="KAPI_SUBVERSION: u8 ="
-SUBVER=$(grep "$SUBSEARCH" "$VERSION_FILE" | cut -d' ' -f5)
+SUBSEARCH="KAPI_SUBVERSION:"
+SUBVER=$(grep "$SUBSEARCH" "$VERSION_FILE" | sed 's/.*= *//' | tr -d ' \r')
 if [[ -z "$SUBVER" || ! "$SUBVER" =~ ^[0-9]+$ ]]; then
     echo "Error: Could not extract a valid number for KAPI_SUBVERSION"
     exit 1
 fi
-REVSEARCH="KAPI_REVISION: u16 ="
-REVVER=$(grep "$REVSEARCH" "$VERSION_FILE" | cut -d' ' -f5)
+REVSEARCH="KAPI_REVISION:"
+REVVER=$(grep "$REVSEARCH" "$VERSION_FILE" | sed 's/.*= *//' | tr -d ' \r')
 if [[ -z "$REVVER" || ! "$REVVER" =~ ^[0-9]+$ ]]; then
     echo "Error: Could not extract a valid number for KAPI_REVISION"
     exit 1
