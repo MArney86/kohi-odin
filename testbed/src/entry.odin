@@ -25,14 +25,14 @@ main :: proc() {
     }
 
     //initialize memory management
-    initialize_memory()
+    KAPI.initialize_memory()
 
     //create the game instance
     game_inst: types.game
 
     //populate the game instance
     if !create_game(&game_inst) {
-        KFATAL("Could not create game!")
+        KAPI.KFATAL("Could not create game!")
         return
     }
 
@@ -41,23 +41,23 @@ main :: proc() {
        game_inst.update == nil || 
        game_inst.render == nil || 
        game_inst.on_resize == nil {
-        KFATAL("Game is missing required function pointers!")
+        KAPI.KFATAL("Game is missing required function pointers!")
         return
     }
 
     //create the application
-    if !application_create(&game_inst) {
-        KINFO("Application failed to create!")
+    if !KAPI.application_create(&game_inst) {
+        KAPI.KINFO("Application failed to create!")
         return
     }
 
     //run the application
-    if !application_run() {
-        KINFO("Application did not shutdown gracefully")
+    if !KAPI.application_run() {
+        KAPI.KINFO("Application did not shutdown gracefully")
         return
     }
 
     //shutdown memory management
-    shutdown_memory()
+    KAPI.shutdown_memory()
     unload_kohi_api()
 }

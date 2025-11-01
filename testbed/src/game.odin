@@ -29,14 +29,14 @@ create_game :: proc(out_game: ^types.game) -> b8 {
     out_game.on_resize = game_on_resize
 
     //allocate memory for game state
-    out_game.state = Kallocate(size_of(game_state), types.memory_tag.MEMORY_TAG_GAME)
+    out_game.state = KAPI.Kallocate(size_of(game_state), types.memory_tag.MEMORY_TAG_GAME)
 
     return TRUE
 }
 
 // game initialization function
 game_initialize :: proc(game_inst: ^types.game) -> b8 {
-    KDEBUG("Game Initialized")
+    KAPI.KDEBUG("Game Initialized")
     return TRUE
 }
 

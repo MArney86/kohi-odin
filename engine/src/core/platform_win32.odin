@@ -5,6 +5,9 @@ package core
 import mem "core:mem"
 import utf16 "core:unicode/utf16"
 import win32 "core:sys/windows"
+import runtime "base:runtime"
+import types "../types"
+//Helpers for string conversions between UTF-8 and UTF-16 on Windows.
 import helpers "../../../libs/helpers"
 
 // Windows layer
@@ -24,7 +27,8 @@ when ODIN_OS == .Windows {
 
     // Window message callback (CALLBACK = __stdcall)
     @(private)
-    win32_process_message :: proc "stdcall"(hwnd: win32.HWND, msg: u32, w_param: win32.WPARAM, lparam: win32.LPARAM) -> win32.LRESULT {
+    win32_process_message :: proc "stdcall"(hwnd: win32.HWND, msg: u32, w_param: win32.WPARAM, l_param: win32.LPARAM) -> win32.LRESULT {
+        context = runtime.default_context()
         switch msg {
             case win32.WM_ERASEBKGND:
                 // Notify the OS that erasing will be handled by the application to prevent flicker
@@ -47,29 +51,44 @@ when ODIN_OS == .Windows {
             }
             case win32.WM_KEYDOWN, win32.WM_SYSKEYDOWN, win32.WM_KEYUP, win32.WM_SYSKEYUP: {
                 // key pressed/released
-                //pressed: b8 = (msg == win32.WM_KEYDOWN || msg == win32.WM_SYSKEYDOWN)
-                //TODO: input processing
+                pressed: b8 = (msg == win32.WM_KEYDOWN || msg == win32.WM_SYSKEYDOWN)
+                key: types.keys = cast(types.keys)w_param
+                input_process_key(key, pressed)
             }
             case win32.WM_MOUSEMOVE: {
                 // mouse move
-                //x_position: i32 = win32.GET_X_LPARAM(l_param)
-                //y_position: i32 = win32.GET_Y_LPARAM(l_param)
-                //TODO: input processing.
+                x_position: i32 = win32.GET_X_LPARAM(l_param)
+                y_position: i32 = win32.GET_Y_LPARAM(l_param)
+                input_process_mouse_move(i16(x_position), i16(y_position))
             }
             case win32.WM_MOUSEWHEEL: {
-                //z_delta: i32 = win32.GET_WHEEL_DELTA_WPARAM(w_param)
-                //if z_delta != 0 {
-                    // flatten the input to an OS-independent value
-                    //z_delta =  (z_delta < 0) ? -1 : 1
-                    //TODO: input processing.
+                z_delta: i32 = cast(i32)win32.GET_WHEEL_DELTA_WPARAM(w_param)
+                if z_delta != 0 {
+                    //flatten the input to an OS-independent value
+                    z_delta =  (z_delta < 0) ? -1 : 1
+                    input_process_mouse_wheel(i8(z_delta))
+                }
             }
+                    
             case win32.WM_LBUTTONDOWN, win32.WM_MBUTTONDOWN, win32.WM_RBUTTONDOWN, win32.WM_LBUTTONUP, win32.WM_MBUTTONUP, win32.WM_RBUTTONUP: {
-                // pressed: b8 = (msg == win32.WM_LBUTTONDOWN || msg == win32.WM_MBUTTONDOWN || msg == win32.WM_RBUTTONDOWN)
-                //TODO: input processing.
+                pressed: b8 = (msg == win32.WM_LBUTTONDOWN || msg == win32.WM_MBUTTONDOWN || msg == win32.WM_RBUTTONDOWN)
+                mouse_button: types.buttons = .BUTTON_MAX_BUTTONS
+                switch msg {
+                    case win32.WM_LBUTTONDOWN, win32.WM_LBUTTONUP:
+                        mouse_button = .BUTTON_LEFT
+                    case win32.WM_MBUTTONDOWN, win32.WM_MBUTTONUP:
+                        mouse_button = .BUTTON_MIDDLE
+                    case win32.WM_RBUTTONDOWN, win32.WM_RBUTTONUP:
+                        mouse_button = .BUTTON_RIGHT
+                }
+
+                if mouse_button != .BUTTON_MAX_BUTTONS {
+                    input_process_button(mouse_button, pressed)
+                }
             }
         }
 
-        return win32.DefWindowProcW(hwnd, msg, w_param, lparam)
+        return win32.DefWindowProcW(hwnd, msg, w_param, l_param)
     
     }
     
@@ -84,7 +103,7 @@ when ODIN_OS == .Windows {
         state.h_instance = cast(win32.HANDLE)(win32.GetModuleHandleW(nil))
 
         // Load default icon
-        icon: win32.HICON = win32.LoadIconW(state.h_instance, helpers.string_to_utf16("IDI_APPLICATION"))
+        icon: win32.HICON = win32.LoadIconW(state.h_instance, helpers.utf8_to_wstring("IDI_APPLICATION"))
 
         // Register window class
         wc := win32.WNDCLASSW{}
@@ -95,11 +114,11 @@ when ODIN_OS == .Windows {
         wc.cbWndExtra = 0
         wc.hInstance = state.h_instance
         wc.hIcon = icon
-        wc.hCursor = win32.LoadCursorW(nil, string_to_utf16("IDC_ARROW"))
+        wc.hCursor = win32.LoadCursorW(nil, helpers.utf8_to_wstring("IDC_ARROW"))
         wc.hbrBackground = nil
-        wc.lpszClassName = helpers.string_to_utf16("kohi_window_class")
+        wc.lpszClassName = helpers.utf8_to_wstring("kohi_window_class")
         if win32.RegisterClassW(&wc) == 0 {
-            win32.MessageBoxW(nil, helpers.string_to_utf16("Window registration failed!"), helpers.string_to_utf16("Error"), win32.MB_ICONEXCLAMATION | win32.MB_OK)
+            win32.MessageBoxW(nil, helpers.utf8_to_wstring("Window registration failed!"), helpers.utf8_to_wstring("Error"), win32.MB_ICONEXCLAMATION | win32.MB_OK)
             return FALSE
         }
         // create window
@@ -137,16 +156,15 @@ when ODIN_OS == .Windows {
         
         handle: win32.HWND = win32.CreateWindowExW(
             window_ex_style,
-            helpers.string_to_utf16("kohi_window_class"),
-            helpers.string_to_utf16(application_name),
+            helpers.utf8_to_wstring("kohi_window_class"),
+            helpers.utf8_to_wstring(application_name),
             window_style,
             window_x, window_y,
             window_width, window_height,
             nil, nil, state.h_instance, nil)
         
         if handle == nil {
-            win32.MessageBoxW(nil, helpers.string_to_utf16("Window creation failed!"), helpers.string_to_utf16("Error"), win32.MB_ICONEXCLAMATION | win32.MB_OK)
-
+            win32.MessageBoxW(nil, helpers.utf8_to_wstring("Window creation failed!"), helpers.utf8_to_wstring("Error"), win32.MB_ICONEXCLAMATION | win32.MB_OK)
             KFATAL("Window creation failed!")
             return FALSE
         } else {
@@ -205,10 +223,10 @@ when ODIN_OS == .Windows {
         levels := [6]u16{64, 4, 6, 2, 1, 8}
         win32.SetConsoleTextAttribute(console_handle, levels[colour])
 
-        win32.OutputDebugStringW(helpers.string_to_utf16(message))
+        win32.OutputDebugStringW(helpers.utf8_to_wstring(message))
         length: int = len(message)
         number_written: win32.LPDWORD = cast(win32.LPDWORD)(nil)
-        win32.WriteConsoleW(console_handle, helpers.string_to_utf16(message), cast(win32.DWORD)length, &number_written^, nil)
+        win32.WriteConsoleW(console_handle, helpers.utf8_to_wstring(message), cast(win32.DWORD)length, &number_written^, nil)
     }
 
     @(private)
@@ -222,10 +240,10 @@ when ODIN_OS == .Windows {
         levels := [6]u16{64, 4, 6, 2, 1, 8}
         win32.SetConsoleTextAttribute(console_handle, levels[colour])
 
-        win32.OutputDebugStringW(helpers.string_to_utf16(message))
+        win32.OutputDebugStringW(helpers.utf8_to_wstring(message))
         length: int = len(message)
         number_written: win32.LPDWORD = cast(win32.LPDWORD)(nil)
-        win32.WriteConsoleW(console_handle, helpers.string_to_utf16(message), cast(win32.DWORD)length, &number_written^, nil)
+        win32.WriteConsoleW(console_handle, helpers.utf8_to_wstring(message), cast(win32.DWORD)length, &number_written^, nil)
     }
 
     // Platform-based time functions
