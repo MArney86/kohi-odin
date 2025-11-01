@@ -16,24 +16,7 @@ else
 fi
 
 
-MAJSEARCH="KAPI_VERSION: u8 ="
-MAJORVER=$(grep "$MAJSEARCH" "$VERSION_FILE" | cut -d' ' -f)
-if [[ -z "$MAJORVER" || ! "$MAJORVER" =~ ^[0-9]+$ ]]; then
-    echo "Error: Could not extract a valid number for KAPI_VERSION"
-    exit 1
-fi
-SUBSEARCH="KAPI_SUBVERSION: u8 ="
-SUBVER=$(grep "$SUBSEARCH" "$VERSION_FILE" | cut -d' ' -f5)
-if [[ -z "$SUBVER" || ! "$SUBVER" =~ ^[0-9]+$ ]]; then
-    echo "Error: Could not extract a valid number for KAPI_SUBVERSION"
-    exit 1
-fi
-REVSEARCH="KAPI_REVISION: u16 ="
-REVVER=$(grep "$REVSEARCH" "$VERSION_FILE" | cut -d' ' -f5)
-if [[ -z "$REVVER" || ! "$REVVER" =~ ^[0-9]+$ ]]; then
-    echo "Error: Could not extract a valid number for KAPI_REVISION"
-    exit 1
-fi
+
 
 if [ ! -d "$BINDIR" ]; then
     echo "Creating bin folder"
@@ -80,7 +63,7 @@ done
 echo ""
 echo "Now compiling library version $MAJORVER.$SUBVER.$REVVER"
 
-assembly="engine"
+assembly="engine-core"
 compilerFlags="-build-mode:shared -debug"
 outputFile="../bin/lib$assembly.so"
 
@@ -89,4 +72,4 @@ if ! command -v odin &> /dev/null; then
     exit 1
 fi
 
-odin build ./src ${compilerFlags} -out:${outputFile}
+odin build ./src/core ${compilerFlags} -out:${outputFile}

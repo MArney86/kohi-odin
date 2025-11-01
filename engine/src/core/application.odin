@@ -17,7 +17,7 @@ application_state :: struct {
 @(private)
 initialized: b8 = FALSE
 @(private)
-app_state := application_state{}
+state_app := application_state{}
 
 @(export)
 application_create :: proc "odin" (game_inst: ^Types.game) -> b8 {
@@ -26,10 +26,11 @@ application_create :: proc "odin" (game_inst: ^Types.game) -> b8 {
         return false
     }
 
-    app_state.game_inst = game_inst
+    state_app.game_inst = game_inst
 
     //initialize subsystems
     initialize_logging()
+    input_initialize()
 
     //TODO: Remove this
     KFATAL("A test message: %f", 3.14)
@@ -39,10 +40,15 @@ application_create :: proc "odin" (game_inst: ^Types.game) -> b8 {
     KDEBUG("A test message: %f", 3.14)
     KTRACE("A test message: %f", 3.14)
 
-    app_state.is_running = TRUE
-    app_state.is_suspended = FALSE
+    state_app.is_running = TRUE
+    state_app.is_suspended = FALSE
 
-    if !platform_startup(&app_state.platform, 
+    if !event_initialize() {
+        KERROR("Event system failed initialization. Application cannot continue.")
+        return FALSE
+    }
+
+    if !platform_startup(&state_app.platform, 
                          game_inst.app_config.name, 
                          cast(i32)game_inst.app_config.start_pos_x, 
                          cast(i32)game_inst.app_config.start_pos_y, 
@@ -51,7 +57,7 @@ application_create :: proc "odin" (game_inst: ^Types.game) -> b8 {
         return FALSE
     }
 
-    app_state.game_inst.on_resize(app_state.game_inst, cast(u32)app_state.width, cast(u32)app_state.height)
+    state_app.game_inst.on_resize(state_app.game_inst, cast(u32)state_app.width, cast(u32)state_app.height)
 
     initialized = TRUE
 
@@ -61,30 +67,39 @@ application_create :: proc "odin" (game_inst: ^Types.game) -> b8 {
 @(export)
 application_run :: proc "odin" () -> b8 {
     KINFO(get_memory_usage_str())
-    
-    for app_state.is_running {
-        if !platform_pump_messages(&app_state.platform) {
-            app_state.is_running = FALSE
+
+    for state_app.is_running {
+        if !platform_pump_messages(&state_app.platform) {
+            state_app.is_running = FALSE
         }
 
-        if !app_state.is_suspended {
-            if !app_state.game_inst.update(app_state.game_inst, cast(f32)0) {
+        if !state_app.is_suspended {
+            if !state_app.game_inst.update(state_app.game_inst, cast(f32)0) {
                 KFATAL("Game update failed, shutting down.")
-                app_state.is_running = FALSE
+                state_app.is_running = FALSE
                 break
             }
 
-            if !app_state.game_inst.render(app_state.game_inst, cast(f32)0) {
+            if !state_app.game_inst.render(state_app.game_inst, cast(f32)0) {
                 KFATAL("Game render failed, shutting down.")
-                app_state.is_running = FALSE
+                state_app.is_running = FALSE
                 break
             }
+
+            //NOTE: input update/state copying should always be handled 
+            // after any input should be recorded; I.E. before this line.
+            // As a safety, input is the last thing to be updated before
+            // this frame ends
+            input_update(cast(f32)0)
         }
     }
 
-    app_state.is_running = FALSE
+    state_app.is_running = FALSE
 
-    platform_shutdown(&app_state.platform)
+    event_shutdown()
+    input_shutdown()
+
+    platform_shutdown(&state_app.platform)
 
     return TRUE
 }
