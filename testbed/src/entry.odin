@@ -25,7 +25,7 @@ main :: proc() {
     }
 
     //initialize memory management
-    KAPI.initialize_memory()
+    KAPI.Kinitialize_memory()
 
     //create the game instance
     game_inst: types.game
@@ -46,18 +46,18 @@ main :: proc() {
     }
 
     //create the application
-    if !KAPI.application_create(&game_inst) {
+    if !KAPI.Kapplication_create(&game_inst) {
         KAPI.KINFO("Application failed to create!")
         return
     }
 
     //run the application
-    if !KAPI.application_run() {
+    if !KAPI.Kapplication_run() {
         KAPI.KINFO("Application did not shutdown gracefully")
         return
     }
 
     //shutdown memory management
-    KAPI.shutdown_memory()
+    KAPI.Kshutdown_memory()
     unload_kohi_api()
 }

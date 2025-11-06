@@ -1,16 +1,18 @@
 #+build !windows
 #+build !darwin
-package core
+package platform
 
 import os "core:os"
 import fmt "core:fmt"
 import mem "core:mem"
 import _c "core:c"
-import xcb "../../../libs/X11/xcb"
+import xcb "../../../../libs/X11/xcb"
 import libc "core:c/libc"
 import strings "core:strings"
 import xlib "vendor:x11/xlib"
-import types "../types"
+import types "../../types"
+import input "../input"
+import console "../console"
 foreign import lc "system:c"
 foreign import xlib_xcb "system:X11-xcb"
 foreign import xlib_lib "system:X11"
@@ -19,7 +21,6 @@ foreign import xlib_lib "system:X11"
 when ODIN_OS == .Linux {
 
     // State Structure
-    @(private)
     internal_state :: struct {
         display: ^xlib.Display,
         connection: ^xcb.connection_t,
@@ -394,8 +395,7 @@ when ODIN_OS == .Linux {
         return
     }
 
-    @(private)
-    platform_startup :: proc(plat_state: ^platform_state, application_name: string, x: i32, y: i32, width: i32, height: i32) -> b8 {
+    startup :: proc(plat_state: ^types.platform_state, application_name: string, x: i32, y: i32, width: i32, height: i32) -> b8 {
         plat_state.internal_state, _ = mem.alloc(size_of(internal_state), align_of(internal_state))
         state: ^internal_state = cast(^internal_state)(plat_state.internal_state)
         
@@ -403,15 +403,15 @@ when ODIN_OS == .Linux {
         screen_p: i32 = 0
         state.display = xlib.OpenDisplay(nil)
         if state.display == nil {
-            KERROR("Failed to open X display")
-            return FALSE
+            console.write_error("Failed to open X display", 1)
+            return false
         }
         
         state.connection = XGetXCBConnection(state.display)
         
         if xcb.connection_has_error(state.connection) != 0 {
-            KERROR("Failed to connect to X server via XCB")
-            return FALSE
+            console.write_error("Failed to connect to X server via XCB", 1)
+            return false
         }
         
         // Turn off key auto-repeat using XCB
@@ -421,8 +421,8 @@ when ODIN_OS == .Linux {
         // Get setup and screen
         setup := xcb.get_setup(state.connection)
         if setup == nil {
-            KERROR("Failed to get XCB setup")
-            return FALSE
+            console.write_error("Failed to get XCB setup", 1)
+            return false
         }
         
         it := xcb.setup_roots_iterator(setup)
@@ -431,7 +431,7 @@ when ODIN_OS == .Linux {
         }
         state.screen = it.data
 
-        KDEBUG("Creating window...")
+        console.write("Creating window...", 5)
         
         // Generate window ID
         state.window = xcb.generate_id(state.connection)
@@ -461,14 +461,14 @@ when ODIN_OS == .Linux {
             event_mask,                       // value mask
             raw_data(value_list[:]))          // value list
 
-        KDEBUG("Window created, setting up window manager protocols...")
+        console.write("Window created, setting up window manager protocols...", 5)
 
         // Set window title
         app_name_len := len(application_name)
         c_name, err := strings.clone_to_cstring(application_name)
         if err != nil {
-            KERROR("Failed to convert application name to C string: %s", err)
-            return FALSE
+            console.write_error("Failed to convert application name to C string", 1)
+            return false
         }
         xcb.change_property(
             state.connection,
@@ -507,8 +507,8 @@ when ODIN_OS == .Linux {
             nil)
 
         if wm_delete_reply == nil || wm_protocols_reply == nil {
-            KERROR("Failed to get atom replies")
-            return FALSE
+            console.write_error("Failed to get atom replies", 1)
+            return false
         }
 
         state.wm_delete_win = wm_delete_reply.atom
@@ -537,17 +537,16 @@ when ODIN_OS == .Linux {
         // Flush all requests to X server
         stream_result := xcb.flush(state.connection)
         if stream_result <= 0 {
-            KERROR("Failed to flush XCB stream: %d", stream_result)
-            return FALSE
+            console.write_error("Failed to flush XCB stream", 1)
+            return false
         }
 
-        KDEBUG("Window should now be visible!")
-        
-        return TRUE
+        console.write("Window should now be visible!", 5)
+
+        return true
     }
 
-    @(private)
-    platform_shutdown :: proc(plat_state: ^platform_state) {
+    shutdown :: proc(plat_state: ^types.platform_state) {
         state: ^internal_state = cast(^internal_state)(plat_state.internal_state)
 
         if state != nil {
@@ -564,12 +563,11 @@ when ODIN_OS == .Linux {
         }
     }
 
-    @(private)
-    platform_pump_messages :: proc(plat_state: ^platform_state) -> b8 {
+    pump_messages :: proc(plat_state: ^types.platform_state) -> b8 {
         state := cast(^internal_state)(plat_state.internal_state)
         
         if state == nil || state.connection == nil {
-            return TRUE
+            return true
         }
 
         // Poll for XCB events
@@ -586,7 +584,7 @@ when ODIN_OS == .Linux {
                     client_event := cast(^xcb.client_message_event_t)event
                     if client_event.data.data32[0] == state.wm_delete_win {
                         libc.free(event)
-                        return FALSE // Indicate shutdown
+                        return false // Indicate shutdown
                     }
                 
                 case cast(u8)xcb.KEY_PRESS, cast(u8)xcb.KEY_RELEASE:
@@ -597,7 +595,7 @@ when ODIN_OS == .Linux {
                     shift_mask := (kb_event.state & u16(xlib.KeyMask.ShiftMask)) != 0
                     
                     if state.display == nil {
-                        KERROR("Display is nil in key event handler!")
+                        console.write_error("Display is nil in key event handler!", 1)
                         break
                     }
                     
@@ -605,7 +603,7 @@ when ODIN_OS == .Linux {
                     key: types.keys = translate_keycode(key_sym)
 
                     //pass to input subsystem for processing
-                    input_process_key(key, pressed)
+                    input.process_key(key, pressed)
 
                 case cast(u8)xcb.BUTTON_PRESS, cast(u8)xcb.BUTTON_RELEASE:
                     // Handle mouse button events
@@ -622,14 +620,15 @@ when ODIN_OS == .Linux {
                     }
                     
                     if mouse_button != .BUTTON_MAX_BUTTONS {
-                        KDEBUG("Mouse button %v %s", mouse_button, pressed ? "pressed" : "released")
-                        input_process_button(mouse_button, pressed)
+                        message := fmt.tprintf("Mouse button %s %s", fmt.enum_value_to_string(mouse_button), pressed ? "pressed" : "released")
+                        console.write(message, 5)
+                        input.process_button(mouse_button, pressed)
                     }
                     
                 case cast(u8)xcb.MOTION_NOTIFY:
                     // Handle mouse motion events
                     motion_event := cast(^xcb.motion_notify_event_t)event
-                    input_process_mouse_move(motion_event.event_x, motion_event.event_y)
+                    input.process_mouse_move(motion_event.event_x, motion_event.event_y)
 
                 case cast(u8)xcb.CONFIGURE_NOTIFY:
                     // Handle window resize/move events
@@ -646,40 +645,10 @@ when ODIN_OS == .Linux {
             }
         }
 
-        return TRUE
+        return true
     }
 
-    @(private)
-    platform_console_write :: proc(message: string, colour: u8) {
-        // FATAL,ERROR,WARN,INFO,DEBUG,TRACE
-        colour_strings := [6]string{"0;41", "1;31", "1;33", "1;32", "1;34", "1;30"}
-        
-        if colour < len(colour_strings) {
-            fmt.printf("\033[%sm%s\033[0m", colour_strings[colour], message)
-            os.flush(os.stdout)
-        } else {
-            fmt.printf(message)
-            os.flush(os.stdout)
-        }
-    }
-
-    @(private)
-    platform_console_write_error :: proc(message: string, colour: u8) {
-        temp := colour
-        // FATAL,ERROR,WARN,INFO,DEBUG,TRACE
-        colour_strings := [6]string{"0;41", "1;31", "1;33", "1;32", "1;34", "1;30"}
-        
-        if colour < len(colour_strings) {
-            fmt.eprintf("\033[%sm%s\033[0m", colour_strings[colour], message)
-            os.flush(os.stderr)
-        } else {
-            fmt.eprintf(message)
-            os.flush(os.stderr)
-        }
-    }
-
-    @(private)
-    platform_get_absolute_time :: proc() -> f64 {
+    get_absolute_time :: proc() -> f64 {
         now: libc.timespec
         CLOCK_MONOTONIC :: 1  // Linux constant for monotonic clock
         result := clock_gettime(CLOCK_MONOTONIC, &now)

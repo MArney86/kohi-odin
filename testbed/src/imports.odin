@@ -5,38 +5,69 @@ import runtime "base:runtime"
 import fmt "core:fmt"
 import dynlib "core:dynlib"
 import helpers "../../libs/helpers"
+import SmArr "core:container/small_array"
 
 KAPI_t :: struct {
+    // asserts
     KASSERT : proc(string, runtime.Source_Code_Location),
     KASSERT_MSG : proc(string, string, runtime.Source_Code_Location),
     KASSERT_DEBUG : proc(string, runtime.Source_Code_Location),
-    KFATAL : proc(string),
-    KERROR : proc(string),
-    KWARN : proc(string),
-    KINFO : proc(string),
-    KDEBUG : proc(string),
-    KTRACE : proc(string),
-    application_create : proc(rawptr) -> b8,
-    application_run : proc() -> b8,
-    initialize_memory : proc(),
-    shutdown_memory : proc(),
+    
+    // logging
+    KFATAL : proc(string, ..any),
+    KERROR : proc(string, ..any),
+    KWARN : proc(string, ..any),
+    KINFO : proc(string, ..any),
+    KDEBUG : proc(string, ..any),
+    KTRACE : proc(string, ..any),
+
+    // application
+    Kapplication_create : proc(rawptr) -> b8,
+    Kapplication_run : proc() -> b8,
+    
+    // memory management
+    Kinitialize_memory : proc(),
+    Kshutdown_memory : proc(),
     Kallocate : proc(u64, types.memory_tag) -> rawptr,
     Kfree : proc(rawptr, u64, types.memory_tag),
     Kzero_memory : proc(rawptr, u64) -> rawptr,
     Kcopy_memory : proc(rawptr, rawptr, u64) -> rawptr,
     Kset_memory : proc(rawptr, i32, u64) -> rawptr,
-    get_memory_usage_str : proc() -> string,
+    Kget_memory_usage_str : proc() -> string,
+    
+    // strings
+    Kstring_length : proc(string) -> u64,
+    Kstring_duplicate : proc(string) -> string,
+
+    // event system
+    Kevent_register : proc(u16, rawptr, types.PFN_on_event) -> b8,
+    Kevent_unregister : proc(u16, rawptr, types.PFN_on_event) -> b8,
+    Kevent_fire : proc(u16, rawptr, types.event_context) -> b8,
+    
+    // input system
+    Kis_key_down : proc(types.keys) -> b8,
+    Kis_key_up : proc(types.keys) -> b8,
+    Kwas_key_down : proc(types.keys) -> b8,
+    Kwas_key_up : proc(types.keys) -> b8,
+    Kis_button_down : proc(types.buttons) -> b8,
+    Kis_button_up : proc(types.buttons) -> b8,
+    Kwas_button_down : proc(types.buttons) -> b8,
+    Kwas_button_up : proc(types.buttons) -> b8,
+    Kget_mouse_position : proc(^i32, ^i32),
+    Kget_previous_mouse_position : proc(^i32, ^i32),
+
     // Version variables
-    KAPI_VERSION : u8,
-    KAPI_SUBVERSION : u8,
-    KAPI_REVISION : u16,
+    KAPI_VERSION : u64,
+    KENGINE_VERSION : u64,
+    
+    // Library handle
     KAPI_lib : dynlib.Library,
 }
 
 KAPI : KAPI_t
 
 load_kohi_api :: proc() -> bool {
-    dll_name := fmt.tprintf("libengine-core.%v", dynlib.LIBRARY_FILE_EXTENSION)
+    dll_name := fmt.tprintf("kohi_engine.%v", dynlib.LIBRARY_FILE_EXTENSION)
     
     lib, lib_ok := dynlib.load_library(dll_name)
     if !lib_ok {
@@ -44,62 +75,64 @@ load_kohi_api :: proc() -> bool {
         return false
     }
 
-    // Load function pointers - remove the ^proc cast
+    // Load function pointers
     KAPI.KASSERT = cast(proc(string, runtime.Source_Code_Location))(dynlib.symbol_address(lib, "KASSERT") or_else nil)
+
     KAPI.KASSERT_MSG = cast(proc(string, string, runtime.Source_Code_Location))(dynlib.symbol_address(lib, "KASSERT_MSG") or_else nil)
     KAPI.KASSERT_DEBUG = cast(proc(string, runtime.Source_Code_Location))(dynlib.symbol_address(lib, "KASSERT_DEBUG") or_else nil)
 
-    KAPI.KFATAL = cast(proc(string))(dynlib.symbol_address(lib, "KFATAL") or_else nil)
-    KAPI.KERROR = cast(proc(string))(dynlib.symbol_address(lib, "KERROR") or_else nil)
-    KAPI.KWARN = cast(proc(string))(dynlib.symbol_address(lib, "KWARN") or_else nil)
-    KAPI.KINFO = cast(proc(string))(dynlib.symbol_address(lib, "KINFO") or_else nil)
-    KAPI.KDEBUG = cast(proc(string))(dynlib.symbol_address(lib, "KDEBUG") or_else nil)
-    KAPI.KTRACE = cast(proc(string))(dynlib.symbol_address(lib, "KTRACE") or_else nil)
+    KAPI.KFATAL = cast(proc(string, ..any))(dynlib.symbol_address(lib, "KFATAL") or_else nil)
+    KAPI.KERROR = cast(proc(string, ..any))(dynlib.symbol_address(lib, "KERROR") or_else nil)
+    KAPI.KWARN = cast(proc(string, ..any))(dynlib.symbol_address(lib, "KWARN") or_else nil)
+    KAPI.KINFO = cast(proc(string, ..any))(dynlib.symbol_address(lib, "KINFO") or_else nil)
+    KAPI.KDEBUG = cast(proc(string, ..any))(dynlib.symbol_address(lib, "KDEBUG") or_else nil)
+    KAPI.KTRACE = cast(proc(string, ..any))(dynlib.symbol_address(lib, "KTRACE") or_else nil)
+    KAPI.Kapplication_create = cast(proc(rawptr) -> b8)(dynlib.symbol_address(lib, "Kapplication_create") or_else nil)
+    KAPI.Kapplication_run = cast(proc() -> b8)(dynlib.symbol_address(lib, "Kapplication_run") or_else nil)
 
-    KAPI.application_create = cast(proc(rawptr) -> b8)(dynlib.symbol_address(lib, "application_create") or_else nil)
-    KAPI.application_run = cast(proc() -> b8)(dynlib.symbol_address(lib, "application_run") or_else nil)
-    
-    KAPI.initialize_memory = cast(proc())(dynlib.symbol_address(lib, "initialize_memory") or_else nil)
-    KAPI.shutdown_memory = cast(proc())(dynlib.symbol_address(lib, "shutdown_memory") or_else nil)
+    KAPI.Kinitialize_memory = cast(proc())(dynlib.symbol_address(lib, "Kinitialize_memory") or_else nil)
+    KAPI.Kshutdown_memory = cast(proc())(dynlib.symbol_address(lib, "Kshutdown_memory") or_else nil)
     KAPI.Kallocate = cast(proc(u64, types.memory_tag) -> rawptr)(dynlib.symbol_address(lib, "Kallocate") or_else nil)
     KAPI.Kfree = cast(proc(rawptr, u64, types.memory_tag))(dynlib.symbol_address(lib, "Kfree") or_else nil)
     KAPI.Kzero_memory = cast(proc(rawptr, u64) -> rawptr)(dynlib.symbol_address(lib, "Kzero_memory") or_else nil)
     KAPI.Kcopy_memory = cast(proc(rawptr, rawptr, u64) -> rawptr)(dynlib.symbol_address(lib, "Kcopy_memory") or_else nil)
     KAPI.Kset_memory = cast(proc(rawptr, i32, u64) -> rawptr)(dynlib.symbol_address(lib, "Kset_memory") or_else nil)
-    KAPI.get_memory_usage_str = cast(proc() -> string)(dynlib.symbol_address(lib, "get_memory_usage_str") or_else nil)
+    KAPI.Kget_memory_usage_str = cast(proc() -> string)(dynlib.symbol_address(lib, "Kget_memory_usage_str") or_else nil)
 
+    KAPI.Kstring_length = cast(proc(string) -> u64)(dynlib.symbol_address(lib, "Kstring_length") or_else nil)
+    KAPI.Kstring_duplicate = cast(proc(string) -> string)(dynlib.symbol_address(lib, "Kstring_duplicate") or_else nil)
+
+    KAPI.Kevent_register = cast(proc(u16, rawptr, types.PFN_on_event) -> b8)(dynlib.symbol_address(lib, "Kevent_register") or_else nil)
+    KAPI.Kevent_unregister = cast(proc(u16, rawptr, types.PFN_on_event) -> b8)(dynlib.symbol_address(lib, "Kevent_unregister") or_else nil)
+    KAPI.Kevent_fire = cast(proc(u16, rawptr, types.event_context) -> b8)(dynlib.symbol_address(lib, "Kevent_fire") or_else nil)
+
+    KAPI.Kis_key_down = cast(proc(types.keys) -> b8)(dynlib.symbol_address(lib, "Kis_key_down") or_else nil)
+    KAPI.Kis_key_up = cast(proc(types.keys) -> b8)(dynlib.symbol_address(lib, "Kis_key_up") or_else nil)
+    KAPI.Kwas_key_down = cast(proc(types.keys) -> b8)(dynlib.symbol_address(lib, "Kwas_key_down") or_else nil)
+    KAPI.Kwas_key_up = cast(proc(types.keys) -> b8)(dynlib.symbol_address(lib, "Kwas_key_up") or_else nil)
+    KAPI.Kis_button_down = cast(proc(types.buttons) -> b8)(dynlib.symbol_address(lib, "Kis_button_down") or_else nil)
+    KAPI.Kis_button_up = cast(proc(types.buttons) -> b8)(dynlib.symbol_address(lib, "Kis_button_up") or_else nil)
+    KAPI.Kwas_button_down = cast(proc(types.buttons) -> b8)(dynlib.symbol_address(lib, "Kwas_button_down") or_else nil)
+    KAPI.Kwas_button_up = cast(proc(types.buttons) -> b8)(dynlib.symbol_address(lib, "Kwas_button_up") or_else nil)
+    KAPI.Kget_mouse_position = cast(proc(^i32, ^i32))(dynlib.symbol_address(lib, "Kget_mouse_position") or_else nil)
+    KAPI.Kget_previous_mouse_position = cast(proc(^i32, ^i32))(dynlib.symbol_address(lib, "Kget_previous_mouse_position") or_else nil)
+    
     // Load version variables
-    temp8 := cast(^u8)(dynlib.symbol_address(lib, "KAPI_VERSION") or_else nil)
-    if temp8 != nil {
-        KAPI.KAPI_VERSION = temp8^
+    temp_ver := cast(^u64)(dynlib.symbol_address(lib, "KAPI_VERSION") or_else nil)
+    if temp_ver != nil {
+        KAPI.KAPI_VERSION = temp_ver^
     } else {
         dynlib.unload_library(lib)
-        fmt.eprintf("Error Loading libengine-core, could not load KAPI_VERSION symbol!\n")
-        return false
-    }
-    
-    temp8 = cast(^u8)(dynlib.symbol_address(lib, "KAPI_SUBVERSION") or_else nil)
-    if temp8 != nil {
-        KAPI.KAPI_SUBVERSION = temp8^
-    } else {
-        dynlib.unload_library(lib)
-        fmt.eprintf("Error Loading libengine-core, could not load KAPI_SUBVERSION symbol!\n")
-        return false
-    }
-    
-    temp16 := cast(^u16)(dynlib.symbol_address(lib, "KAPI_REVISION") or_else nil)
-    if temp16 != nil {
-        KAPI.KAPI_REVISION = temp16^
-    } else {
-        dynlib.unload_library(lib)
-        fmt.eprintf("Error Loading libengine-core, could not load KAPI_REVISION symbol!\n")
+        fmt.eprintf("Error Loading kohi_engine, could not load KAPI_VERSION symbol!\n")
         return false
     }
 
-    // Fix version check (dereference the pointers)
-   if KAPI.KAPI_VERSION == 0 && KAPI.KAPI_SUBVERSION == 0 && KAPI.KAPI_REVISION == 0 {
+    temp_ver = cast(^u64)(dynlib.symbol_address(lib, "KENGINE_VERSION") or_else nil)
+    if temp_ver != nil {
+        KAPI.KENGINE_VERSION = temp_ver^
+    } else {
         dynlib.unload_library(lib)
-        fmt.eprintf("Error Loading libengine-core, version information is all zero!\n")
+        fmt.eprintf("Error Loading kohi_engine, could not load KENGINE_VERSION symbol!\n")
         return false
     }
 
@@ -110,10 +143,10 @@ load_kohi_api :: proc() -> bool {
        KAPI.KDEBUG == nil || 
        KAPI.KINFO == nil || 
        KAPI.KFATAL == nil ||
-       KAPI.application_create == nil || 
-       KAPI.application_run == nil ||
-       KAPI.initialize_memory == nil || 
-       KAPI.shutdown_memory == nil ||
+       KAPI.Kapplication_create == nil || 
+       KAPI.Kapplication_run == nil ||
+       KAPI.Kinitialize_memory == nil || 
+       KAPI.Kshutdown_memory == nil ||
        KAPI.KASSERT == nil || 
        KAPI.KASSERT_MSG == nil || 
        KAPI.KASSERT_DEBUG == nil ||
@@ -122,9 +155,174 @@ load_kohi_api :: proc() -> bool {
        KAPI.KTRACE == nil ||
        KAPI.Kzero_memory == nil || 
        KAPI.Kset_memory == nil || 
-       KAPI.get_memory_usage_str == nil {
+       KAPI.Kget_memory_usage_str == nil ||
+       KAPI.Kstring_length == nil || 
+       KAPI.Kstring_duplicate == nil ||
+       KAPI.Kevent_register == nil || 
+       KAPI.Kevent_unregister == nil ||
+       KAPI.Kevent_fire == nil ||
+       KAPI.Kis_key_down == nil ||
+       KAPI.Kis_key_up == nil ||
+       KAPI.Kwas_key_down == nil ||
+       KAPI.Kwas_key_up == nil ||
+       KAPI.Kis_button_down == nil ||
+       KAPI.Kis_button_up == nil ||
+       KAPI.Kwas_button_down == nil ||
+       KAPI.Kwas_button_up == nil ||
+       KAPI.Kget_mouse_position == nil ||
+       KAPI.Kget_previous_mouse_position == nil ||
+       KAPI.KAPI_VERSION == 0 ||
+       KAPI.KENGINE_VERSION == 0 {
         dynlib.unload_library(lib)
         fmt.eprintf("One or more required function pointers are null in the loaded library %s\n", dll_name)
+        nil_list : [36]string
+        index: = 0
+        if KAPI.Kallocate == nil {
+           nil_list[index] = "Kallocate"
+           index += 1
+        }
+        if KAPI.Kfree == nil {
+            nil_list[index] = "Kfree"
+            index += 1
+        }
+        if KAPI.Kcopy_memory == nil {
+            nil_list[index] = "Kcopy_memory"
+            index += 1
+        }
+        if KAPI.Kzero_memory == nil {
+            nil_list[index] = "Kzero_memory"
+            index += 1
+        }
+        if KAPI.Kset_memory == nil {
+            nil_list[index] = "Kset_memory"
+            index += 1
+        }
+        if KAPI.Kget_memory_usage_str == nil {
+            nil_list[index] = "Kget_memory_usage_str"
+            index += 1
+        }
+        if KAPI.KDEBUG == nil {
+            nil_list[index] = "KDEBUG"
+            index += 1
+        }
+        if KAPI.KINFO == nil {
+            nil_list[index] = "KINFO"
+            index += 1
+        }
+        if KAPI.KFATAL == nil {
+            nil_list[index] = "KFATAL"
+            index += 1
+        }
+        if KAPI.KERROR == nil {
+            nil_list[index] = "KERROR"
+            index += 1
+        }
+        if KAPI.KWARN == nil {
+            nil_list[index] = "KWARN"
+            index += 1
+        }
+        if KAPI.KTRACE == nil {
+            nil_list[index] = "KTRACE"
+            index += 1
+        }
+        if KAPI.KASSERT == nil {
+            nil_list[index] = "KASSERT"
+            index += 1
+        }
+        if KAPI.KASSERT_MSG == nil {
+            nil_list[index] = "KASSERT_MSG"
+            index += 1
+        }
+        if KAPI.KASSERT_DEBUG == nil {
+            nil_list[index] = "KASSERT_DEBUG"
+            index += 1
+        }
+        if KAPI.Kapplication_create == nil {
+            nil_list[index] = "Kapplication_create"
+            index += 1
+        }
+        if KAPI.Kapplication_run == nil {
+            nil_list[index] = "Kapplication_run"
+            index += 1
+        }
+        if KAPI.Kinitialize_memory == nil {
+            nil_list[index] = "Kinitialize_memory"
+            index += 1
+        }
+        if KAPI.Kshutdown_memory == nil {
+            nil_list[index] = "Kshutdown_memory"
+            index += 1
+        }
+        if KAPI.Kstring_length == nil {
+            nil_list[index] = "Kstring_length"
+            index += 1
+        }
+        if KAPI.Kstring_duplicate == nil {
+            nil_list[index] = "Kstring_duplicate"
+            index += 1
+        }
+        if KAPI.Kevent_register == nil {
+            nil_list[index] = "Kevent_register"
+            index += 1
+        }
+        if KAPI.Kevent_unregister == nil {
+            nil_list[index] = "Kevent_unregister"
+            index += 1
+        }
+        if KAPI.Kevent_fire == nil {
+            nil_list[index] = "Kevent_fire"
+            index += 1
+        }
+        if KAPI.Kis_key_down == nil {
+            nil_list[index] = "Kis_key_down"
+            index += 1
+        }
+        if KAPI.Kis_key_up == nil {
+            nil_list[index] = "Kis_key_up"
+            index += 1
+        }
+        if KAPI.Kwas_key_down == nil {
+            nil_list[index] = "Kwas_key_down"
+            index += 1
+        }
+        if KAPI.Kwas_key_up == nil {
+            nil_list[index] = "Kwas_key_up"
+            index += 1
+        }
+        if KAPI.Kis_button_down == nil {
+            nil_list[index] = "Kis_button_down"
+            index += 1
+        }
+        if KAPI.Kis_button_up == nil {
+            nil_list[index] = "Kis_button_up"
+            index += 1
+        }
+        if KAPI.Kwas_button_down == nil {
+            nil_list[index] = "Kwas_button_down"
+            index += 1
+        }
+        if KAPI.Kwas_button_up == nil {
+            nil_list[index] = "Kwas_button_up"
+            index += 1
+        }
+        if KAPI.Kget_mouse_position == nil {
+            nil_list[index] = "Kget_mouse_position"
+            index += 1
+        }
+        if KAPI.Kget_previous_mouse_position == nil {
+            nil_list[index] = "Kget_previous_mouse_position"
+            index += 1
+        }
+        if KAPI.KAPI_VERSION == 0 {
+            nil_list[index] = "KAPI_VERSION"
+            index += 1
+        }
+        if KAPI.KENGINE_VERSION == 0 {
+            nil_list[index] = "KENGINE_VERSION"
+            index += 1
+        }
+
+        fmt.eprintf("Null function pointers: %v\n", nil_list)
         return false
     }
 
@@ -142,16 +340,31 @@ unload_kohi_api :: proc() {
     KAPI.KINFO = nil
     KAPI.KWARN = nil
     KAPI.KTRACE = nil
-    KAPI.application_create = nil
-    KAPI.application_run = nil
-    KAPI.initialize_memory = nil
-    KAPI.shutdown_memory = nil
+    KAPI.Kapplication_create = nil
+    KAPI.Kapplication_run = nil
+    KAPI.Kinitialize_memory = nil
+    KAPI.Kshutdown_memory = nil
     KAPI.Kallocate = nil
     KAPI.Kfree = nil
     KAPI.Kcopy_memory = nil
     KAPI.Kzero_memory = nil
     KAPI.Kset_memory = nil
-    KAPI.get_memory_usage_str = nil
+    KAPI.Kget_memory_usage_str = nil
+    KAPI.Kstring_length = nil
+    KAPI.Kstring_duplicate = nil
+    KAPI.Kevent_register = nil
+    KAPI.Kevent_unregister = nil
+    KAPI.Kevent_fire = nil
+    KAPI.Kis_key_down = nil
+    KAPI.Kis_key_up = nil
+    KAPI.Kwas_key_down = nil
+    KAPI.Kwas_key_up = nil
+    KAPI.Kis_button_down = nil
+    KAPI.Kis_button_up = nil
+    KAPI.Kwas_button_down = nil
+    KAPI.Kwas_button_up = nil
+    KAPI.Kget_mouse_position = nil
+    KAPI.Kget_previous_mouse_position = nil
 
     if KAPI.KAPI_lib != nil {
         dynlib.unload_library(KAPI.KAPI_lib)

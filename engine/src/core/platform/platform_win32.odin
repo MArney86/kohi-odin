@@ -1,27 +1,25 @@
 #+build !linux
 #+build !darwin
-package core
+package platform
 
 import mem "core:mem"
-import utf16 "core:unicode/utf16"
 import win32 "core:sys/windows"
 import runtime "base:runtime"
-import types "../types"
+import types "../../types"
+import input "../input"
+import console "../console"
 //Helpers for string conversions between UTF-8 and UTF-16 on Windows.
-import helpers "../../../libs/helpers"
+import helpers "../../../../libs/helpers"
 
 // Windows layer
 when ODIN_OS == .Windows {
-    @(private)
     internal_state :: struct {
         h_instance: win32.HINSTANCE,
         h_wnd:      win32.HWND,
     }
 
     //clock
-    @(private)
     clock_frequency: f64
-    @(private)
     start_time: win32.LARGE_INTEGER
 
 
@@ -53,20 +51,20 @@ when ODIN_OS == .Windows {
                 // key pressed/released
                 pressed: b8 = (msg == win32.WM_KEYDOWN || msg == win32.WM_SYSKEYDOWN)
                 key: types.keys = cast(types.keys)w_param
-                input_process_key(key, pressed)
+                input.process_key(key, pressed)
             }
             case win32.WM_MOUSEMOVE: {
                 // mouse move
                 x_position: i32 = win32.GET_X_LPARAM(l_param)
                 y_position: i32 = win32.GET_Y_LPARAM(l_param)
-                input_process_mouse_move(i16(x_position), i16(y_position))
+                input.process_mouse_move(i16(x_position), i16(y_position))
             }
             case win32.WM_MOUSEWHEEL: {
                 z_delta: i32 = cast(i32)win32.GET_WHEEL_DELTA_WPARAM(w_param)
                 if z_delta != 0 {
                     //flatten the input to an OS-independent value
                     z_delta =  (z_delta < 0) ? -1 : 1
-                    input_process_mouse_wheel(i8(z_delta))
+                    input.process_mouse_wheel(i8(z_delta))
                 }
             }
                     
@@ -83,7 +81,7 @@ when ODIN_OS == .Windows {
                 }
 
                 if mouse_button != .BUTTON_MAX_BUTTONS {
-                    input_process_button(mouse_button, pressed)
+                    input.process_button(mouse_button, pressed)
                 }
             }
         }
@@ -94,8 +92,7 @@ when ODIN_OS == .Windows {
     
     // Platform-based application state functions
 
-    @(private)
-    platform_startup :: proc(plat_state: ^platform_state, application_name: string, x: i32, y: i32, width: i32, height: i32) -> b8 {
+    startup :: proc(plat_state: ^types.platform_state, application_name: string, x: i32, y: i32, width: i32, height: i32) -> b8 {
         // Allocate memory for internal state using Odin allocator
         plat_state.internal_state, _ = mem.alloc(size_of(internal_state), align_of(internal_state))
         // Cast raw pointer and initialize fields
@@ -119,7 +116,7 @@ when ODIN_OS == .Windows {
         wc.lpszClassName = helpers.utf8_to_wstring("kohi_window_class")
         if win32.RegisterClassW(&wc) == 0 {
             win32.MessageBoxW(nil, helpers.utf8_to_wstring("Window registration failed!"), helpers.utf8_to_wstring("Error"), win32.MB_ICONEXCLAMATION | win32.MB_OK)
-            return FALSE
+            return false
         }
         // create window
         client_x: i32 = x
@@ -144,7 +141,7 @@ when ODIN_OS == .Windows {
 
         //Obtain the border size
         border_rect := win32.RECT{0, 0, 0, 0}
-        win32.AdjustWindowRectEx(&border_rect, window_style, FALSE, window_ex_style)
+        win32.AdjustWindowRectEx(&border_rect, window_style, false, window_ex_style)
 
         //In this case, the border rectangle is negative
         window_x += border_rect.left
@@ -165,14 +162,14 @@ when ODIN_OS == .Windows {
         
         if handle == nil {
             win32.MessageBoxW(nil, helpers.utf8_to_wstring("Window creation failed!"), helpers.utf8_to_wstring("Error"), win32.MB_ICONEXCLAMATION | win32.MB_OK)
-            KFATAL("Window creation failed!")
-            return FALSE
+            console.write_error("Window creation failed!", 0)
+            return false
         } else {
             state.h_wnd = handle
         }
 
         // Show  the window
-        should_activate : b32 = TRUE //TODO: if the window should not accept input, this should be FALSE
+        should_activate : b32 = true //TODO: if the window should not accept input, this should be FALSE
         show_window_command_flags: i32 = should_activate ? win32.SW_SHOW : win32.SW_SHOWNOACTIVATE
         //if initially minimized, use SW_MINIMIZE: SW_SHOWMINNOACTIVE
         //if initially maximized, use SW_MAXIMIZED: SW_MAXIMIZE
@@ -185,11 +182,10 @@ when ODIN_OS == .Windows {
         clock_frequency = 1.0 / f64(frequency)
         win32.QueryPerformanceCounter(&start_time)
 
-        return TRUE
+        return true
     }
 
-    @(private)
-    platform_shutdown :: proc(plat_state: ^platform_state) {
+    shutdown :: proc(plat_state: ^types.platform_state) {
         state := cast(^internal_state)(plat_state.internal_state)
 
         if state.h_wnd != nil {
@@ -199,8 +195,7 @@ when ODIN_OS == .Windows {
         }
     }
 
-    @(private)
-    platform_pump_messages :: proc(plat_state: ^platform_state) -> b8 {
+    pump_messages :: proc(plat_state: ^types.platform_state) -> b8 {
         message := win32.MSG{}
         // Process all pending Windows messages
         for win32.PeekMessageW(&message, nil, 0, 0, win32.PM_REMOVE) {
@@ -208,47 +203,11 @@ when ODIN_OS == .Windows {
             win32.DispatchMessageW(&message)
         }
 
-        return TRUE
-    }
-
-    // Platform-based console functions
-    @(private)
-    platform_console_write :: proc(message: string, colour: u8) {
-        console_handle: win32.HANDLE = win32.GetStdHandle(win32.STD_OUTPUT_HANDLE)
-        if console_handle == nil {
-            KFATAL("Invalid console handle")
-            return
-        }
-        // FATAL, ERROR, WARN, INFO, DEBUG, TRACE
-        levels := [6]u16{64, 4, 6, 2, 1, 8}
-        win32.SetConsoleTextAttribute(console_handle, levels[colour])
-
-        win32.OutputDebugStringW(helpers.utf8_to_wstring(message))
-        length: int = len(message)
-        number_written: win32.LPDWORD = cast(win32.LPDWORD)(nil)
-        win32.WriteConsoleW(console_handle, helpers.utf8_to_wstring(message), cast(win32.DWORD)length, &number_written^, nil)
-    }
-
-    @(private)
-    platform_console_write_error :: proc(message: string, colour: u8) {
-        console_handle: win32.HANDLE = win32.GetStdHandle(win32.STD_ERROR_HANDLE)
-        if console_handle == nil {
-            KFATAL("Invalid console handle")
-            return
-        }
-        // FATAL, ERROR, WARN, INFO, DEBUG, TRACE
-        levels := [6]u16{64, 4, 6, 2, 1, 8}
-        win32.SetConsoleTextAttribute(console_handle, levels[colour])
-
-        win32.OutputDebugStringW(helpers.utf8_to_wstring(message))
-        length: int = len(message)
-        number_written: win32.LPDWORD = cast(win32.LPDWORD)(nil)
-        win32.WriteConsoleW(console_handle, helpers.utf8_to_wstring(message), cast(win32.DWORD)length, &number_written^, nil)
+        return true
     }
 
     // Platform-based time functions
-    @(private)
-    platform_get_absolute_time :: proc() -> f64 {
+    get_absolute_time :: proc() -> f64 {
         now_time: win32.LARGE_INTEGER
         win32.QueryPerformanceCounter(&now_time)
         return cast(f64)now_time * clock_frequency

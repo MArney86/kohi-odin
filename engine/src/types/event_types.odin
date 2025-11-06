@@ -1,6 +1,6 @@
 package types
 
-CHAR :: u8 // 8-bit character type
+PFN_on_event :: ^proc(code: u16, sender: rawptr, listener_inst: rawptr, data: event_context) -> b8
 
 event_context :: struct {
     // 128 bytes union data

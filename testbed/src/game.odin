@@ -15,6 +15,7 @@ game_state :: struct {
 //game creation function definition
 create_game :: proc(out_game: ^types.game) -> b8 {
     //populate the game instance
+    KAPI.KDEBUG("Populating game instance...")
     out_game.app_config = types.application_config{
         start_pos_x = 100,
         start_pos_y = 100,
@@ -23,13 +24,15 @@ create_game :: proc(out_game: ^types.game) -> b8 {
         name = "kohi Engine Testbed",
     }
     //ensure all required function pointers are set
+    KAPI.KDEBUG("Setting game function pointers...")
     out_game.initialize = game_initialize
     out_game.update    = game_update
     out_game.render    = game_render
     out_game.on_resize = game_on_resize
 
     //allocate memory for game state
-    out_game.state = KAPI.Kallocate(size_of(game_state), types.memory_tag.MEMORY_TAG_GAME)
+    KAPI.KDEBUG("Allocating memory for game state...")
+    out_game.state = KAPI.Kallocate(size_of(game_state), .MEMORY_TAG_GAME)
 
     return TRUE
 }
