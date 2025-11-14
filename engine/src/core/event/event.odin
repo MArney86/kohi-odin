@@ -4,6 +4,7 @@ import types "../../types"
 import logger "../logger"
 import memory "../memory"
 import darray "../../containers/darray"
+import runtime "base:runtime"
 
 
 MAX_MESSAGE_CODES :: 16384
@@ -38,7 +39,7 @@ initialize :: proc() -> b8 {
 shutdown :: proc() {
     for i: u16; i < MAX_MESSAGE_CODES; i += 1 {
         if state.registered[i].events != nil {
-            darray.destroy(state.registered[i].events);
+            darray.Delete(state.registered[i].events, typeid_of(registered_event));
             state.registered[i].events = nil;
         }
     }
@@ -58,8 +59,8 @@ register :: proc(code: u16, listener_inst: rawptr, on_event: types.PFN_on_event)
     }
 
     if state.registered[code].events == nil {
-        array := darray.Make(registered_event)
-        state.registered[code].events = cast(^[dynamic]registered_event)&array
+        array := cast(^[dynamic]registered_event)darray.Make(registered_event)
+        state.registered[code].events = array
     }
 
     registered_count: u64 = cast(u64)len(state.registered[code].events)
@@ -73,7 +74,7 @@ register :: proc(code: u16, listener_inst: rawptr, on_event: types.PFN_on_event)
     event: registered_event
     event.listener = listener_inst
     event.callback = on_event
-    if !darray.push(state.registered[code].events, event) {
+    if !darray.push(cast(rawptr)state.registered[code].events, registered_event, cast(rawptr)&event) {
         logger.ERROR("Failed to register event listener for code %d", code)
         return false
     }
@@ -97,12 +98,18 @@ unregister :: proc(code: u16, listener_inst: rawptr, on_event: types.PFN_on_even
         return false
     }
 
+    if len(state.registered[code].events) == 0 {
+        // No listeners registered for this event, which is okay
+        return false
+    }
+
     registered_count: u64 = cast(u64)len(state.registered[code].events)
     for i: u64; i < registered_count; i += 1 {
         e: registered_event = state.registered[code].events[i]
         if e.listener == listener_inst && e.callback == on_event {
             // Found event to unregister
-            popped_event := darray.pop_at(state.registered[code].events, i)
+            popped_event: registered_event
+            darray.pop_at(state.registered[code].events, registered_event, i, &popped_event)
             return true
         }
     }

@@ -27,7 +27,7 @@ log_level :: enum {
     LOG_LEVEL_TRACE,
 }
 
-initialize :: proc() -> b8 {
+initialize :: proc() -> bool {
     //TODO: create log file.
     return true
 }

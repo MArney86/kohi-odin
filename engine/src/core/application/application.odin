@@ -147,9 +147,11 @@ run :: proc "odin" () -> b8 {
 
             //update last time
             state.last_time = current_time
-
-            logger.INFO(memory.get_memory_usage_str())
-
+            when ODIN_DEBUG {
+                if memory.stats.updated {
+                    logger.DEBUG(memory.get_memory_usage_str())
+                }
+            }
         }
     }
 

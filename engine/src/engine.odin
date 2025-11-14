@@ -11,51 +11,52 @@ import ass "./core/asserts"
 import event "./core/event"
 import inp "./core/input"
 import engine_string "./core/string"
+import darray "./containers/darray"
 
 @(export)
-KASSERT :: proc(expression: string, loc: runtime.Source_Code_Location){
-    ass.ASSERT(expression, loc)
+KASSERT :: proc(cond: bool, expr: string = #caller_expression(cond), loc: runtime.Source_Code_Location){
+    ass.ASSERT(cond, expr, loc)
 }
 
 @(export)
-KASSERT_MSG :: proc(expression: string, message: string, loc: runtime.Source_Code_Location){
-    ass.ASSERT_MSG(expression, message, loc)
+KASSERT_MSG :: proc(cond: bool, message: string, expr: string = #caller_expression(cond), loc: runtime.Source_Code_Location){
+    ass.ASSERT_MSG(cond, message, expr, loc)
 }
 
 @(export)
-KASSERT_DEBUG :: proc(expression: string, loc: runtime.Source_Code_Location){
-    ass.ASSERT_DEBUG(expression, loc)
+KASSERT_DEBUG :: proc(cond: bool, expr: string = #caller_expression(cond), loc: runtime.Source_Code_Location){
+    ass.ASSERT_DEBUG(cond, expr, loc)
 }
 
 // logging
 @(export)
 KFATAL :: proc(message: string, args: ..any){
-    log.FATAL(message, args)
+    log.FATAL(message, ..args)
 }
 
 @(export)
 KERROR :: proc(message: string, args: ..any){
-    log.ERROR(message, args)
+    log.ERROR(message, ..args)
 }
 
 @(export)
 KWARN :: proc(message: string, args: ..any){
-    log.WARN(message, args)
+    log.WARN(message, ..args)
 }
 
 @(export)
 KINFO :: proc(message: string, args: ..any){
-    log.INFO(message, args)
+    log.INFO(message, ..args)
 }
 
 @(export)
 KDEBUG :: proc(message: string, args: ..any){
-    log.DEBUG(message, args)
+    log.DEBUG(message, ..args)
 }
 
 @(export)
 KTRACE :: proc(message: string, args: ..any){
-    log.TRACE(message, args)
+    log.TRACE(message, ..args)
 }
 
 // application
@@ -104,9 +105,11 @@ Kset_memory :: proc(ptr: rawptr, value: i32, size: u64) -> rawptr {
     return mem.set_memory(ptr, value, size)
 }
 
-@(export)
-Kget_memory_usage_str :: proc() -> string {
-    return mem.get_memory_usage_str()
+when ODIN_DEBUG {
+    @(export)
+    Kget_memory_usage_str :: proc() -> string {
+        return mem.get_memory_usage_str()
+    }
 }
     
 // strings
@@ -178,7 +181,57 @@ Kget_previous_mouse_position :: proc(x: ^i32, y: ^i32){
     inp.get_previous_mouse_position(x,y)
 }
 
-    // Version variables
+@(export)
+Kdarray_make :: proc(type: typeid) -> rawptr {
+    return darray.Make(type)
+}
+
+@(export)
+Kdarray_reserve :: proc(array: rawptr, type: typeid, capacity: u64) -> bool {
+    return darray.Reserve(array, type, capacity)
+}
+
+@(export)
+Kdarray_delete :: proc(array: rawptr, type: typeid) {
+    darray.Delete(array, type)
+}
+
+@(export)
+Kdarray_push :: proc(array: rawptr, type: typeid, value: rawptr) -> bool {
+    return darray.push(array, type, value)
+}
+
+@(export)
+Kdarray_pop :: proc(array: rawptr, type: typeid, out_value: rawptr) -> bool {
+    return darray.pop(array, type, out_value)
+}
+
+@(export)
+Kdarray_insert_at :: proc(array: rawptr, type: typeid, index: u64, value: rawptr) -> bool {
+    return darray.insert_at(array, type, index, value)
+}
+
+@(export)
+Kdarray_pop_at :: proc(array: rawptr, type: typeid, index: u64, out_value: rawptr) -> bool {
+    return darray.pop_at(array, type, index, out_value)
+}
+
+@(export)
+Kdarray_clear :: proc(array: rawptr, type: typeid) {
+    darray.Clear(array, type)
+}
+
+@(export)
+Kdarray_resize :: proc(array: rawptr, type: typeid, new_length: u64) {
+    darray.Resize(array, type, new_length)
+}
+
+@(export)
+Kdarray_set_len :: proc(array: rawptr, type: typeid, new_len: u64) {
+    darray.set_len(array, type, new_len)
+}
+
+// Version variables
 @(export)
 KAPI_VERSION : u64 = 1 << 48 | 0 << 32 | 0 << 16 | 0 // major | minor | patch | build
 @(export)

@@ -8,9 +8,37 @@ import types "../../types"
 import runtime "base:runtime"
 import logger "../logger"
 
-memory_stats :: struct {
-    total_allocated: u64,
-    tagged_allocations: [types.memory_tag.MEMORY_TAG_MAX_TAGS]u64,
+when ODIN_DEBUG {
+    memory_stats :: struct {
+        updated: b8,
+        total_allocated: u64,
+        tagged_allocations: [types.memory_tag.MEMORY_TAG_MAX_TAGS]u64,
+    }
+
+    @(export)
+    get_memory_usage_str :: proc () -> string {
+        output_str_builder: strings.Builder
+        strings.builder_init(&output_str_builder, context.temp_allocator)
+        _ = strings.write_string(&output_str_builder, "System memory use (tagged):\n")
+
+        for i: int = 0; i < int(types.memory_tag.MEMORY_TAG_MAX_TAGS); i += 1 {
+            if enum_val, ok:= fmt.enum_value_to_string(cast(types.memory_tag)i); ok {
+                mem_val:= u64(stats.tagged_allocations[i])
+                if len(enum_val) < 21 {
+                    _ = strings.write_string(&output_str_builder, fmt.tprintfln("\t %s: \t\t%M", enum_val, mem_val))
+                } else {
+                    _ = strings.write_string(&output_str_builder, fmt.tprintfln("\t %s: \t%M", enum_val, mem_val))
+                }
+            }
+        }
+        stats.updated = false
+        return fmt.sbprintf(&output_str_builder, "%s:\t\t\t%M", "Total Allocated", stats.total_allocated)
+    }
+} else {
+    memory_stats :: struct {
+        total_allocated: u64,
+        tagged_allocations: [types.memory_tag.MEMORY_TAG_MAX_TAGS]u64,
+    }
 }
 
 stats := memory_stats{}
@@ -32,6 +60,9 @@ New :: proc($T: typeid, tag: types.memory_tag) -> ^T {
     added: u64 = u64(size_of(T))
     stats.total_allocated += added
     stats.tagged_allocations[tag] += added
+    when ODIN_DEBUG {
+        stats.updated = true
+    }
     return cast(^T)ptr
 }
 
@@ -42,6 +73,9 @@ Allocate :: proc(size: u64, tag: types.memory_tag) -> rawptr {
 
     stats.total_allocated += size
     stats.tagged_allocations[cast(int)tag] += size
+    when ODIN_DEBUG {
+        stats.updated = true
+    }
 
     block, _ := mem.alloc(cast(int)size)
     zero_memory(block, size)
@@ -55,8 +89,11 @@ Free :: proc(block: rawptr, size: u64, tag: types.memory_tag) {
 
     stats.total_allocated -= size
     stats.tagged_allocations[cast(int)tag] -= size
+    when ODIN_DEBUG {
+        stats.updated = true
+    }
 
-    mem.free(block)
+    mem.free_with_size(block, cast(int)size)
 }
 
 zero_memory :: proc(block: rawptr, size: u64) -> rawptr {
@@ -69,23 +106,4 @@ copy_memory :: proc(dest: rawptr, src: rawptr, size: u64) -> rawptr {
 
 set_memory :: proc(dest: rawptr, value: i32, size: u64) -> rawptr {
     return mem.set(dest, cast(byte)value, cast(int)size)
-}
-
-@(export)
-get_memory_usage_str :: proc () -> string {
-    output_str_builder: strings.Builder
-    strings.builder_init(&output_str_builder, context.temp_allocator)
-    _ = strings.write_string(&output_str_builder, "System memory use (tagged):\n")
-
-    for i: int = 0; i < int(types.memory_tag.MEMORY_TAG_MAX_TAGS); i += 1 {
-        if enum_val, ok:= fmt.enum_value_to_string(cast(types.memory_tag)i); ok {
-            mem_val:= u64(stats.tagged_allocations[i])
-            if len(enum_val) < 21 {
-                _ = strings.write_string(&output_str_builder, fmt.tprintfln("\t %s: \t\t%M", enum_val, mem_val))
-            } else {
-                _ = strings.write_string(&output_str_builder, fmt.tprintfln("\t %s: \t%M", enum_val, mem_val))
-            }
-        }
-    }
-    return fmt.sbprintf(&output_str_builder, "%s:\t\t\t%M", "Total Allocated", stats.total_allocated)
 }

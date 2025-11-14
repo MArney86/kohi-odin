@@ -10,6 +10,7 @@ import input "../input"
 import console "../console"
 //Helpers for string conversions between UTF-8 and UTF-16 on Windows.
 import helpers "../../../../libs/helpers"
+import vk "../../../../libs/vulkan_lib"
 
 // Windows layer
 when ODIN_OS == .Windows {
@@ -211,5 +212,9 @@ when ODIN_OS == .Windows {
         now_time: win32.LARGE_INTEGER
         win32.QueryPerformanceCounter(&now_time)
         return cast(f64)now_time * clock_frequency
+    }
+
+    get_required_extension_names :: proc(names_darray: ^[dynamic]cstring) {
+        append(names_darray, cstring(vk.KHR_WIN32_SURFACE_EXTENSION_NAME))
     }
 }

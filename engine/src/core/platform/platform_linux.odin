@@ -13,6 +13,8 @@ import xlib "vendor:x11/xlib"
 import types "../../types"
 import input "../input"
 import console "../console"
+import darray "../../containers/darray"
+import vk "../../../../libs/vulkan_lib"
 foreign import lc "system:c"
 foreign import xlib_xcb "system:X11-xcb"
 foreign import xlib_lib "system:X11"
@@ -658,6 +660,10 @@ when ODIN_OS == .Linux {
         }
 
         return cast(f64)now.tv_sec + cast(f64)now.tv_nsec / 1e9
+    }
+
+    get_required_extension_names :: proc(names_darray: ^[dynamic]cstring) {
+        append_elem(names_darray, cstring(vk.KHR_XCB_SURFACE_EXTENSION_NAME))
     }
 }
 

@@ -6,8 +6,6 @@ import "core:c/libc"
 import SC "core:strconv"
 import logger "../logger"
 
-// Assertion configuration
-KASSERTIONS_ENABLED :: true
 
 // Platform-agnostic debug break using Odin intrinsics
 debug_break :: proc() {
@@ -18,11 +16,10 @@ report_assertion_failure :: proc(expression: string, message: string, file: stri
     logger.FATAL("Assertion Failure: %s, message: '%s', in file: %s, line: %d\n", expression, message, file, line)
 }
 
-ASSERT :: proc(expr: string, loc := #caller_location) {
-    when KASSERTIONS_ENABLED {
+ASSERT :: proc(cond: bool, expr: string = #caller_expression(cond),  loc := #caller_location) {
+    when !ODIN_DISABLE_ASSERT {
         // Parse the expression string into a bool, ignore any parse error
-        ok, _ := SC.parse_bool(expr)
-        if !ok {
+        if !cond {
             report_assertion_failure(expr, "", loc.file_path, i32(loc.line))
             debug_break()
         }
@@ -32,23 +29,22 @@ ASSERT :: proc(expr: string, loc := #caller_location) {
     }
 }
 
-ASSERT_MSG :: proc(expr: string, message: string, loc := #caller_location) {
-    when KASSERTIONS_ENABLED {
-        ok, _ := SC.parse_bool(expr)
-        if !ok {
-            report_assertion_failure("expression", message, loc.file_path, i32(loc.line))
+ASSERT_MSG :: proc(cond: bool, message: string, expr: string = #caller_expression(cond), loc := #caller_location) {
+    when !ODIN_DISABLE_ASSERT {
+        if !cond {
+            report_assertion_failure(expr, message, loc.file_path, i32(loc.line))
             debug_break()
         }
     } else {
         // does nothing
     }
 }
-ASSERT_DEBUG :: proc(expr: string, loc := #caller_location) {
-    when KASSERTIONS_ENABLED && ODIN_DEBUG {
-        ok, _ := SC.parse_bool(expr)
-            if !ok {
-                report_assertion_failure("expression", "", loc.file_path, i32(loc.line))
-                debug_break()
+
+ASSERT_DEBUG :: proc(cond: bool, expr: string = #caller_expression(cond), loc := #caller_location) {
+    when !ODIN_DISABLE_ASSERT && ODIN_DEBUG {
+        if !cond {
+            report_assertion_failure(expr, "", loc.file_path, i32(loc.line))
+            debug_break()
             }
     } else {
         // does nothing

@@ -4699,7 +4699,7 @@ load_proc_addresses :: proc{
 
 vulkan_library: dynlib.Library
 
-load :: proc () -> bool {
+initialize :: proc () -> bool {
     library_name: string
     when os.OS == .Windows {
         library_name = "vulkan-1.dll"
@@ -4727,7 +4727,7 @@ load :: proc () -> bool {
     return true
 }
 
-unload :: proc () {
+close :: proc () {
     if vulkan_library != nil {
         dynlib.unload_library(vulkan_library)
         vulkan_library = {}
