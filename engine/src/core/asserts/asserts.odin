@@ -1,10 +1,10 @@
 package asserts
 
-import "base:runtime"
 import "base:intrinsics"
 import "core:c/libc"
 import SC "core:strconv"
 import logger "../logger"
+import runtime "base:runtime"
 
 
 // Platform-agnostic debug break using Odin intrinsics
@@ -16,7 +16,7 @@ report_assertion_failure :: proc(expression: string, message: string, file: stri
     logger.FATAL("Assertion Failure: %s, message: '%s', in file: %s, line: %d\n", expression, message, file, line)
 }
 
-ASSERT :: proc(cond: bool, expr: string = #caller_expression(cond),  loc := #caller_location) {
+ASSERT :: proc(cond: bool, expr: string = #caller_expression(cond),  loc: runtime.Source_Code_Location = #caller_location) {
     when !ODIN_DISABLE_ASSERT {
         // Parse the expression string into a bool, ignore any parse error
         if !cond {
@@ -29,7 +29,7 @@ ASSERT :: proc(cond: bool, expr: string = #caller_expression(cond),  loc := #cal
     }
 }
 
-ASSERT_MSG :: proc(cond: bool, message: string, expr: string = #caller_expression(cond), loc := #caller_location) {
+ASSERT_MSG :: proc(cond: bool, message: string, expr: string = #caller_expression(cond), loc: runtime.Source_Code_Location = #caller_location) {
     when !ODIN_DISABLE_ASSERT {
         if !cond {
             report_assertion_failure(expr, message, loc.file_path, i32(loc.line))
@@ -40,7 +40,7 @@ ASSERT_MSG :: proc(cond: bool, message: string, expr: string = #caller_expressio
     }
 }
 
-ASSERT_DEBUG :: proc(cond: bool, expr: string = #caller_expression(cond), loc := #caller_location) {
+ASSERT_DEBUG :: proc(cond: bool, expr: string = #caller_expression(cond), loc: runtime.Source_Code_Location = #caller_location) {
     when !ODIN_DISABLE_ASSERT && ODIN_DEBUG {
         if !cond {
             report_assertion_failure(expr, "", loc.file_path, i32(loc.line))

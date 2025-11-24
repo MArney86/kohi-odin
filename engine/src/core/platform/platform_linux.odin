@@ -2,11 +2,10 @@
 #+build !darwin
 package platform
 
-import os "core:os"
 import fmt "core:fmt"
 import mem "core:mem"
 import _c "core:c"
-import xcb "../../../../libs/X11/xcb"
+import xcb "vendor:x11/xcb"
 import libc "core:c/libc"
 import strings "core:strings"
 import xlib "vendor:x11/xlib"
@@ -14,10 +13,11 @@ import types "../../types"
 import input "../input"
 import console "../console"
 import darray "../../containers/darray"
-import vk "../../../../libs/vulkan_lib"
+import vk "vendor:vulkan/dynamic"
 foreign import lc "system:c"
 foreign import xlib_xcb "system:X11-xcb"
 foreign import xlib_lib "system:X11"
+
 
 
 when ODIN_OS == .Linux {
@@ -30,6 +30,7 @@ when ODIN_OS == .Linux {
         screen: ^xcb.screen_t,
         wm_protocols: xcb.atom_t,
         wm_delete_win: xcb.atom_t,
+        surface: vk.SurfaceKHR,
     }
 
     @(private)
@@ -565,7 +566,7 @@ when ODIN_OS == .Linux {
         }
     }
 
-    pump_messages :: proc(plat_state: ^types.platform_state) -> b8 {
+    pump_messages :: proc(plat_state: ^types.platform_state) -> bool {
         state := cast(^internal_state)(plat_state.internal_state)
         
         if state == nil || state.connection == nil {
@@ -592,7 +593,7 @@ when ODIN_OS == .Linux {
                 case cast(u8)xcb.KEY_PRESS, cast(u8)xcb.KEY_RELEASE:
                     // Handle key events
                     kb_event: ^xcb.key_press_event_t = cast(^xcb.key_press_event_t)event
-                    pressed: b8 = event.response_type == xcb.KEY_PRESS;
+                    pressed: bool = event.response_type == xcb.KEY_PRESS;
                     code: xcb.keycode_t = kb_event.detail
                     shift_mask := (kb_event.state & u16(xlib.KeyMask.ShiftMask)) != 0
                     
@@ -610,7 +611,7 @@ when ODIN_OS == .Linux {
                 case cast(u8)xcb.BUTTON_PRESS, cast(u8)xcb.BUTTON_RELEASE:
                     // Handle mouse button events
                     mouse_event: ^xcb.button_press_event_t  = cast(^xcb.button_press_event_t)event;
-                    pressed: b8 = event.response_type == cast(u8)xcb.BUTTON_PRESS;
+                    pressed: bool = event.response_type == cast(u8)xcb.BUTTON_PRESS;
                     mouse_button: types.buttons = .BUTTON_MAX_BUTTONS
                     switch (mouse_event.detail) {
                         case cast(u8)xcb.button_index_t.BUTTON_INDEX_1:
@@ -664,6 +665,23 @@ when ODIN_OS == .Linux {
 
     get_required_extension_names :: proc(names_darray: ^[dynamic]cstring) {
         append_elem(names_darray, cstring(vk.KHR_XCB_SURFACE_EXTENSION_NAME))
+    }
+
+    create_vulkan_surface :: proc(plat_state: ^types.platform_state, vk_context: ^types.vulkan_context) -> bool {
+        state := cast(^internal_state)(plat_state.internal_state)
+
+        create_info: vk.XcbSurfaceCreateInfoKHR = {vk.StructureType.XCB_SURFACE_CREATE_INFO_KHR, nil, vk.XcbSurfaceCreateFlagsKHR(nil), nil, 0}
+        create_info.connection = state.connection
+        create_info.window = state.window
+
+        result: vk.Result = vk.CreateXcbSurfaceKHR(vk_context.instance, &create_info, vk_context.allocator, &vk_context.surface)
+        if result != .SUCCESS {
+            console.write_error("Failed to create Vulkan XCB surface!", 0)
+            return false
+        }
+
+        state.surface = vk_context.surface
+        return true
     }
 }
 

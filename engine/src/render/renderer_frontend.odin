@@ -7,7 +7,7 @@ import logger "../core/logger"
 
 state: ^types.renderer_backend
 
-initialize :: proc(application_name: string, plat_state: ^types.platform_state) -> b8 {
+initialize :: proc(application_name: string, plat_state: ^types.platform_state) -> bool {
     state = cast(^types.renderer_backend)memory.Allocate(cast(u64)size_of(types.renderer_backend), .MEMORY_TAG_RENDERER)
 
     //TODO: make this configurable
@@ -32,12 +32,12 @@ shutdown :: proc() {
     memory.Free(state, cast(u64)size_of(types.renderer_backend), .MEMORY_TAG_RENDERER)
 }
 
-begin_frame :: proc(delta_time: f32) -> b8 {
+begin_frame :: proc(delta_time: f32) -> bool {
     return state.begin_frame(state, delta_time)
 }
 
-end_frame :: proc(delta_time: f32) -> b8 {
-    result: b8 = state.end_frame(state, delta_time)
+end_frame :: proc(delta_time: f32) -> bool {
+    result: bool = state.end_frame(state, delta_time)
     state.frame_number += 1
     return result
 }
@@ -46,9 +46,9 @@ on_resized :: proc(width: u16, height: u16) {
     // For now, we will just use a dummy implementation
 }
 
-draw_frame :: proc(packet: ^types.render_packet) -> b8 {
+draw_frame :: proc(packet: ^types.render_packet) -> bool {
     if begin_frame(packet.delta_time) {
-        result: b8 = end_frame(packet.delta_time)
+        result: bool = end_frame(packet.delta_time)
 
         if !result {
             logger.ERROR("renderer_end_frame failed. Application shutting down.")

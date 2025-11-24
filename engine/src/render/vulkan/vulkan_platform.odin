@@ -1,15 +1,13 @@
 package vulkan_backend
 
-import fmt "core:fmt"
-import runtime "base:runtime"
-import asserts "../../core/asserts"
-import vk "../../../../libs/vulkan_lib"
+import types "../../types"
+import vk "vendor:vulkan/dynamic"
 import plat "../../core/platform"
 
 get_required_extension_names :: proc(names_darray: ^[dynamic]cstring) {
     plat.get_required_extension_names(names_darray)
 }
 
-check :: proc (result: vk.Result, call: string = #caller_expression, loc: runtime.Source_Code_Location = #caller_location) {
-        asserts.ASSERT_MSG(result == .SUCCESS, call, fmt.tprintf("Vulkan call '%s' failed with error code %s", call, fmt.enum_value_to_string(result)), loc)
+create_vulkan_surface :: proc(plat_state: ^types.platform_state, vulkan_context: ^types.vulkan_context) -> bool {
+    return plat.create_vulkan_surface(plat_state, vulkan_context)
 }

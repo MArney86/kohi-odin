@@ -7,32 +7,34 @@ import mem "core:mem"
 import fmt "core:fmt"
 import strings "core:strings"
 import strconv "core:strconv"
+import KAPI "../../libs/KAPI"
 
 // Boolean constants
 TRUE :: true
 FALSE :: false
 
-@(private)
-version_file := "APIversion.txt"
-
 main :: proc() {
+    fmt.println("Testbed starting...")
     
     //Load shared libraries
-    kohi_ok := load_kohi_api()
+    fmt.println("Loading kohi API...")
+    kohi_ok := KAPI.initialize_kohi_api()
     if !kohi_ok {
         fmt.eprintf("Could not load kohi engine API!\n")
         return
     }
+    fmt.println("Kohi API loaded successfully")
 
     //initialize memory management
-    KAPI.Kinitialize_memory()
+    fmt.println("Initializing memory...")
+    KAPI.initialize_memory()
 
     //create the game instance
-    game_inst: types.game
+    game_inst: KAPI.game
 
     //populate the game instance
     if !create_game(&game_inst) {
-        KAPI.KFATAL("Could not create game!")
+        KAPI.FATAL("Could not create game!")
         return
     }
 
@@ -41,23 +43,23 @@ main :: proc() {
        game_inst.update == nil || 
        game_inst.render == nil || 
        game_inst.on_resize == nil {
-        KAPI.KFATAL("Game is missing required function pointers!")
+        KAPI.FATAL("Game is missing required function pointers!")
         return
     }
 
     //create the application
-    if !KAPI.Kapplication_create(&game_inst) {
-        KAPI.KINFO("Application failed to create!")
+    if !KAPI.application_create(&game_inst) {
+        KAPI.INFO("Application failed to create!")
         return
     }
 
     //run the application
-    if !KAPI.Kapplication_run() {
-        KAPI.KINFO("Application did not shutdown gracefully")
+    if !KAPI.application_run() {
+        KAPI.INFO("Application did not shutdown gracefully")
         return
     }
 
     //shutdown memory management
-    KAPI.Kshutdown_memory()
-    unload_kohi_api()
+    KAPI.shutdown_memory()
+    KAPI.shutdown_kohi_api()
 }

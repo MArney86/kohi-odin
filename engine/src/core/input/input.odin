@@ -24,7 +24,7 @@ input_state :: struct {
 
 //Internal input state
 @(private="file")
-initialized: b8 = false
+initialized: bool = false
 @(private="file")
 state: input_state
 
@@ -52,7 +52,7 @@ update :: proc(delta_time: f64) {
 
 //keyboard input
 @(export)
-is_key_down :: proc(key: types.keys) -> b8 {
+is_key_down :: proc(key: types.keys) -> bool {
     if !initialized {
         return false
     }
@@ -60,7 +60,7 @@ is_key_down :: proc(key: types.keys) -> b8 {
 }
 
 @(export)
-is_key_up :: proc(key: types.keys) -> b8 {
+is_key_up :: proc(key: types.keys) -> bool {
     if !initialized {
         return false
     }
@@ -68,7 +68,7 @@ is_key_up :: proc(key: types.keys) -> b8 {
 }
 
 @(export)
-was_key_down :: proc(key: types.keys) -> b8 {
+was_key_down :: proc(key: types.keys) -> bool {
     if !initialized {
         return false
     }
@@ -76,19 +76,19 @@ was_key_down :: proc(key: types.keys) -> b8 {
 }
 
 @(export)
-was_key_up :: proc(key: types.keys) -> b8 {
+was_key_up :: proc(key: types.keys) -> bool {
     if !initialized {
         return false
     }
     return bool(state.keyboard_previous.keys[int(key)]) == false
 }
 
-process_key :: proc(key: types.keys, pressed: b8) {
+process_key :: proc(key: types.keys, pressed: bool) {
     //only handle if the state actually changed
-    if b8(state.keyboard_current.keys[int(key)]) != pressed {
+    if bool(state.keyboard_current.keys[int(key)]) != pressed {
         //KDEBUG("Key %d %s", key, pressed ? "pressed" : "released")
         //update internal state
-        state.keyboard_current.keys[int(key)] = pressed
+        state.keyboard_current.keys[int(key)] = cast(b8)pressed
 
         // fire off event for immediate processing
         event_context: types.event_context
@@ -102,7 +102,7 @@ process_key :: proc(key: types.keys, pressed: b8) {
 
 //mouse input
 @(export)
-is_button_down :: proc(button: types.buttons) -> b8 {
+is_button_down :: proc(button: types.buttons) -> bool {
     if !initialized {
         return false
     }
@@ -110,7 +110,7 @@ is_button_down :: proc(button: types.buttons) -> b8 {
 }
 
 @(export)
-is_button_up :: proc(button: types.buttons) -> b8 {
+is_button_up :: proc(button: types.buttons) -> bool {
     if !initialized {
         return false
     }
@@ -118,7 +118,7 @@ is_button_up :: proc(button: types.buttons) -> b8 {
 }
 
 @(export)
-was_button_down :: proc(button: types.buttons) -> b8 {
+was_button_down :: proc(button: types.buttons) -> bool {
     if !initialized {
         return false
     }
@@ -126,7 +126,7 @@ was_button_down :: proc(button: types.buttons) -> b8 {
 }
 
 @(export)
-was_button_up :: proc(button: types.buttons) -> b8 {
+was_button_up :: proc(button: types.buttons) -> bool {
     if !initialized {
         return false
     }
@@ -155,9 +155,9 @@ get_previous_mouse_position :: proc(x: ^i32, y: ^i32) {
     y^ = cast(i32)state.mouse_previous.y
 }
 
-process_button :: proc(button: types.buttons, pressed: b8) {
+process_button :: proc(button: types.buttons, pressed: bool) {
     //if state changed, fire an event
-    if b8(state.mouse_current.buttons[int(button)]) != pressed {
+    if bool(state.mouse_current.buttons[int(button)]) != pressed {
         //update internal state
         state.mouse_current.buttons[int(button)] = cast(u8)pressed
 

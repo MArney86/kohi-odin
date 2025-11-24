@@ -9,14 +9,15 @@ import types "../../types"
 import input "../input"
 import console "../console"
 //Helpers for string conversions between UTF-8 and UTF-16 on Windows.
-import helpers "../../../../libs/helpers"
-import vk "../../../../libs/vulkan_lib"
+import str "../string"
+import vk "vendor:vulkan/dynamic"
 
 // Windows layer
 when ODIN_OS == .Windows {
     internal_state :: struct {
         h_instance: win32.HINSTANCE,
         h_wnd:      win32.HWND,
+        surface: vk.SurfaceKHR
     }
 
     //clock
@@ -50,7 +51,7 @@ when ODIN_OS == .Windows {
             }
             case win32.WM_KEYDOWN, win32.WM_SYSKEYDOWN, win32.WM_KEYUP, win32.WM_SYSKEYUP: {
                 // key pressed/released
-                pressed: b8 = (msg == win32.WM_KEYDOWN || msg == win32.WM_SYSKEYDOWN)
+                pressed: bool = (msg == win32.WM_KEYDOWN || msg == win32.WM_SYSKEYDOWN)
                 key: types.keys = cast(types.keys)w_param
                 input.process_key(key, pressed)
             }
@@ -70,7 +71,7 @@ when ODIN_OS == .Windows {
             }
                     
             case win32.WM_LBUTTONDOWN, win32.WM_MBUTTONDOWN, win32.WM_RBUTTONDOWN, win32.WM_LBUTTONUP, win32.WM_MBUTTONUP, win32.WM_RBUTTONUP: {
-                pressed: b8 = (msg == win32.WM_LBUTTONDOWN || msg == win32.WM_MBUTTONDOWN || msg == win32.WM_RBUTTONDOWN)
+                pressed: bool = (msg == win32.WM_LBUTTONDOWN || msg == win32.WM_MBUTTONDOWN || msg == win32.WM_RBUTTONDOWN)
                 mouse_button: types.buttons = .BUTTON_MAX_BUTTONS
                 switch msg {
                     case win32.WM_LBUTTONDOWN, win32.WM_LBUTTONUP:
@@ -101,7 +102,7 @@ when ODIN_OS == .Windows {
         state.h_instance = cast(win32.HANDLE)(win32.GetModuleHandleW(nil))
 
         // Load default icon
-        icon: win32.HICON = win32.LoadIconW(state.h_instance, helpers.utf8_to_wstring("IDI_APPLICATION"))
+        icon: win32.HICON = win32.LoadIconW(state.h_instance, str.str_to_wstring("IDI_APPLICATION"))
 
         // Register window class
         wc := win32.WNDCLASSW{}
@@ -112,11 +113,11 @@ when ODIN_OS == .Windows {
         wc.cbWndExtra = 0
         wc.hInstance = state.h_instance
         wc.hIcon = icon
-        wc.hCursor = win32.LoadCursorW(nil, helpers.utf8_to_wstring("IDC_ARROW"))
+        wc.hCursor = win32.LoadCursorW(nil, str.str_to_wstring("IDC_ARROW"))
         wc.hbrBackground = nil
-        wc.lpszClassName = helpers.utf8_to_wstring("kohi_window_class")
+        wc.lpszClassName = str.str_to_wstring("kohi_window_class")
         if win32.RegisterClassW(&wc) == 0 {
-            win32.MessageBoxW(nil, helpers.utf8_to_wstring("Window registration failed!"), helpers.utf8_to_wstring("Error"), win32.MB_ICONEXCLAMATION | win32.MB_OK)
+            win32.MessageBoxW(nil, str.str_to_wstring("Window registration failed!"), str.str_to_wstring("Error"), win32.MB_ICONEXCLAMATION | win32.MB_OK)
             return false
         }
         // create window
@@ -154,15 +155,15 @@ when ODIN_OS == .Windows {
         
         handle: win32.HWND = win32.CreateWindowExW(
             window_ex_style,
-            helpers.utf8_to_wstring("kohi_window_class"),
-            helpers.utf8_to_wstring(application_name),
+            str.str_to_wstring("kohi_window_class"),
+            str.str_to_wstring(application_name),
             window_style,
             window_x, window_y,
             window_width, window_height,
             nil, nil, state.h_instance, nil)
         
         if handle == nil {
-            win32.MessageBoxW(nil, helpers.utf8_to_wstring("Window creation failed!"), helpers.utf8_to_wstring("Error"), win32.MB_ICONEXCLAMATION | win32.MB_OK)
+            win32.MessageBoxW(nil, str.str_to_wstring("Window creation failed!"), str.str_to_wstring("Error"), win32.MB_ICONEXCLAMATION | win32.MB_OK)
             console.write_error("Window creation failed!", 0)
             return false
         } else {
@@ -196,7 +197,7 @@ when ODIN_OS == .Windows {
         }
     }
 
-    pump_messages :: proc(plat_state: ^types.platform_state) -> b8 {
+    pump_messages :: proc(plat_state: ^types.platform_state) -> bool {
         message := win32.MSG{}
         // Process all pending Windows messages
         for win32.PeekMessageW(&message, nil, 0, 0, win32.PM_REMOVE) {
@@ -216,5 +217,22 @@ when ODIN_OS == .Windows {
 
     get_required_extension_names :: proc(names_darray: ^[dynamic]cstring) {
         append(names_darray, cstring(vk.KHR_WIN32_SURFACE_EXTENSION_NAME))
+    }
+
+    create_vulkan_surface :: proc(plat_state: ^types.platform_state, vulkan_context: ^types.vulkan_context) -> bool {
+        state := cast(^internal_state)(plat_state.internal_state)
+
+        create_info: vk.Win32SurfaceCreateInfoKHR = {vk.StructureType.WIN32_SURFACE_CREATE_INFO_KHR, nil, vk.Win32SurfaceCreateFlagsKHR(nil), nil, nil}
+        create_info.hinstance = state.h_instance
+        create_info.hwnd = state.h_wnd
+
+        result: vk.Result = vk.CreateWin32SurfaceKHR(vulkan_context.instance, &create_info, vulkan_context.allocator, &vulkan_context.surface)
+        if result != .SUCCESS {
+            console.write_error("Failed to create Vulkan Win32 surface!", 0)
+            return false
+        }
+
+        state.surface = vulkan_context.surface
+        return true
     }
 }

@@ -12,8 +12,8 @@ import platform "../platform"
 
 application_state :: struct {
     game_inst: ^types.game,
-    is_running: b8,
-    is_suspended: b8,
+    is_running: bool,
+    is_suspended: bool,
     platform: types.platform_state, 
     width: i16,
     height: i16,
@@ -25,7 +25,7 @@ initialized: b8 = false
 state : application_state
 
 @(export)
-create :: proc "odin" (game_inst: ^types.game) -> b8 {
+create :: proc "odin" (game_inst: ^types.game) -> bool {
     if initialized {
         logger.ERROR("application_create called more than once.")
         return false
@@ -82,7 +82,7 @@ create :: proc "odin" (game_inst: ^types.game) -> b8 {
 }
 
 @(export)
-run :: proc "odin" () -> b8 {
+run :: proc "odin" () -> bool {
     clock.start(&state.clock)
     clock.update(&state.clock)
     state.last_time = state.clock.elapsed_time
@@ -131,7 +131,7 @@ run :: proc "odin" () -> b8 {
                 remaining_ms: u64 = cast(u64)(remaining_seconds * 1000.0)
 
                 //if there is time remaining, give it back to the OS
-                limit_frames: b8 = false
+                limit_frames: bool = false
                 if remaining_ms > 0 && limit_frames {
                     platform.sleep(remaining_ms - 1)
                 }

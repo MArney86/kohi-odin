@@ -8,7 +8,7 @@ import runtime "base:runtime"
 
 
 MAX_MESSAGE_CODES :: 16384
-initialized: b8 = false
+initialized: bool = false
 
 registered_event :: struct {
     listener: rawptr,
@@ -25,7 +25,7 @@ system_state :: struct {
 
 state: system_state
 
-initialize :: proc() -> b8 {
+initialize :: proc() -> bool {
     if initialized == true {
         return false
     }
@@ -53,7 +53,7 @@ shutdown :: proc() {
  * @param on_event the callback function pointer to be invoked when the event code is fired.
  * @return TRUE if the event listener is successfully registered, FALSE otherwise.
  */
-register :: proc(code: u16, listener_inst: rawptr, on_event: types.PFN_on_event) -> b8 {
+register :: proc(code: u16, listener_inst: rawptr, on_event: types.PFN_on_event) -> bool {
     if initialized == false {
         return false
     }
@@ -88,7 +88,7 @@ register :: proc(code: u16, listener_inst: rawptr, on_event: types.PFN_on_event)
  * @param on_event the callback function pointer to be unregistered.
  * @return TRUE if the event listener is successfully unregistered, FALSE otherwise.
  */
-unregister :: proc(code: u16, listener_inst: rawptr, on_event: types.PFN_on_event) -> b8 {
+unregister :: proc(code: u16, listener_inst: rawptr, on_event: types.PFN_on_event) -> bool {
      if initialized == false {
         return false
     }
@@ -126,7 +126,7 @@ unregister :: proc(code: u16, listener_inst: rawptr, on_event: types.PFN_on_even
  * @param data the event context data to send with the event.
  * @return TRUE if the event is successfully sent, FALSE otherwise.
  */
-fire :: proc(code: u16, sender: rawptr, event_context: types.event_context) -> b8 {
+fire :: proc(code: u16, sender: rawptr, event_context: types.event_context) -> bool {
    if initialized == false {
         return false
     }

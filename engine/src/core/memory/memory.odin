@@ -10,7 +10,7 @@ import logger "../logger"
 
 when ODIN_DEBUG {
     memory_stats :: struct {
-        updated: b8,
+        updated: bool,
         total_allocated: u64,
         tagged_allocations: [types.memory_tag.MEMORY_TAG_MAX_TAGS]u64,
     }
@@ -49,21 +49,6 @@ initialize :: proc() {
 
 shutdown :: proc() {
     //does nothing yet
-}
-
-New :: proc($T: typeid, tag: types.memory_tag) -> ^T {
-    ptr, all_err := new(T)
-    if all_err != runtime.Allocator_Error.None {
-        logger.FATAL("KNew failed to allocate memory for type %v", typeid_of(T))
-        return nil
-    }
-    added: u64 = u64(size_of(T))
-    stats.total_allocated += added
-    stats.tagged_allocations[tag] += added
-    when ODIN_DEBUG {
-        stats.updated = true
-    }
-    return cast(^T)ptr
 }
 
 Allocate :: proc(size: u64, tag: types.memory_tag) -> rawptr {

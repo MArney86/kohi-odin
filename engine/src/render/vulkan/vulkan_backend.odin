@@ -1,17 +1,14 @@
 package vulkan_backend
 
 import types "../../types"
-import vk "../../../../libs/vulkan_lib"
-import fmt "core:fmt"
+import vk "vendor:vulkan/dynamic"
 import strings "core:strings"
 import runtime "base:runtime"
 import logger "../../core/logger"
-import str "../../core/string"
 import darray "../../containers/darray"
-import asserts "../../core/asserts"
 vk_context : types.vulkan_context
 
-initialize :: proc(backend: ^types.renderer_backend, application_name: string, plat_state: ^types.platform_state) -> b8 {
+initialize :: proc(backend: ^types.renderer_backend, application_name: string, plat_state: ^types.platform_state) -> bool {
     loaded := vk.initialize()
     if !loaded {
         return false
@@ -57,11 +54,11 @@ initialize :: proc(backend: ^types.renderer_backend, application_name: string, p
         required_validation_count = cast(u32)len(required_validation_layers)
 
         available_layer_count: u32
-        check(vk.EnumerateInstanceLayerProperties(&available_layer_count, nil))
+        vk.CHECK(vk.EnumerateInstanceLayerProperties(&available_layer_count, nil))
         available_layers := cast(^[dynamic]vk.LayerProperties)darray.Make(vk.LayerProperties)
         defer darray.Delete(cast(rawptr)available_layers, vk.LayerProperties)
         darray.Reserve(cast(rawptr)available_layers, vk.LayerProperties, cast(u64)available_layer_count)
-        check(vk.EnumerateInstanceLayerProperties(&available_layer_count, raw_data(available_layers^)))
+        vk.CHECK(vk.EnumerateInstanceLayerProperties(&available_layer_count, raw_data(available_layers^)))
         darray.set_len(cast(rawptr)available_layers, vk.LayerProperties, cast(u64)available_layer_count)
 
         //check availability of required layers
@@ -89,7 +86,7 @@ initialize :: proc(backend: ^types.renderer_backend, application_name: string, p
     create_info.enabledLayerCount = required_validation_count
     create_info.ppEnabledLayerNames = raw_data(required_validation_layers^)
 
-    check(vk.CreateInstance(&create_info, vk_context.allocator, &vk_context.instance))
+    vk.CHECK(vk.CreateInstance(&create_info, vk_context.allocator, &vk_context.instance))
     logger.INFO("Vulkan renderer initialized successfully.")
     vk.load_proc_addresses_instance(vk_context.instance)
     when ODIN_DEBUG {
@@ -105,9 +102,21 @@ initialize :: proc(backend: ^types.renderer_backend, application_name: string, p
         }
  
 
-        check(vk.CreateDebugUtilsMessengerEXT(vk_context.instance, &debug_create_info, vk_context.allocator, &vk_context.debug_messenger))
+        vk.CHECK(vk.CreateDebugUtilsMessengerEXT(vk_context.instance, &debug_create_info, vk_context.allocator, &vk_context.debug_messenger))
         logger.DEBUG("Vulkan Debugger created.")
     }
+
+    logger.DEBUG("Creating Vulkan surface...")
+    if !create_vulkan_surface(plat_state, &vk_context) {
+        logger.ERROR("Failed to create Vulkan surface.")
+        return false
+    }
+
+    if !vulkan_device_create(&vk_context) {
+        logger.ERROR("Failed to create Vulkan device.")
+        return false
+    }
+
     logger.INFO("Vulkan renderer initialized successfully.")
     return true
 }
@@ -135,12 +144,12 @@ on_resized :: proc(backend: ^types.renderer_backend, width: u16, height: u16) {
     // Vulkan-specific resize handling code here
 }
 
-begin_frame :: proc(backend: ^types.renderer_backend, delta_time: f32) -> b8 {
+begin_frame :: proc(backend: ^types.renderer_backend, delta_time: f32) -> bool {
     // Vulkan-specific begin frame code here
     return true
 }
 
-end_frame :: proc(backend: ^types.renderer_backend, delta_time: f32) -> b8 {
+end_frame :: proc(backend: ^types.renderer_backend, delta_time: f32) -> bool {
     // Vulkan-specific end frame code here
     return true
 }

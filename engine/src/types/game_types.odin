@@ -8,9 +8,9 @@ application_config :: struct {
     name: string,
 }
 
-game_initialize_func :: proc(^game) -> b8
-game_update_func :: proc(^game, f32) -> b8
-game_render_func :: proc(^game, f32) -> b8
+game_initialize_func :: proc(^game) -> bool
+game_update_func :: proc(^game, f32) -> bool
+game_render_func :: proc(^game, f32) -> bool
 game_resize_func :: proc(^game, u32, u32)
 
 game :: struct {

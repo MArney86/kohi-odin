@@ -67,7 +67,7 @@ Make :: proc(type: typeid) -> rawptr {
 }
 
 
-Reserve :: proc(array: rawptr, type: typeid, capacity: u64) -> (ok: bool) {
+Reserve :: proc(array: rawptr, type: typeid, capacity: u64) -> bool {
     array := array
     ti := type_info_of(type)
     elem_size := ti.size
