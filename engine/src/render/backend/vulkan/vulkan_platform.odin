@@ -1,8 +1,8 @@
 package vulkan_backend
 
-import types "../../types"
+import types "../../../types"
 import vk "vendor:vulkan/dynamic"
-import plat "../../core/platform"
+import plat "../../../core/platform"
 
 get_required_extension_names :: proc(names_darray: ^[dynamic]cstring) {
     plat.get_required_extension_names(names_darray)

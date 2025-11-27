@@ -6,6 +6,7 @@ import "core:os"
 import "core:dynlib"
 import "core:fmt"
 import c "core:c"
+import xcb "vendor:x11/xcb"
 
 
 // Loader Procedure Types
@@ -119,7 +120,7 @@ ProcGetPhysicalDeviceVideoEncodeQualityLevelPropertiesKHR            :: #type pr
 ProcGetPhysicalDeviceVideoFormatPropertiesKHR                        :: #type proc "system" (physicalDevice: PhysicalDevice, pVideoFormatInfo: ^PhysicalDeviceVideoFormatInfoKHR, pVideoFormatPropertyCount: ^u32, pVideoFormatProperties: [^]VideoFormatPropertiesKHR) -> Result
 ProcGetPhysicalDeviceWaylandPresentationSupportKHR                   :: #type proc "system" (physicalDevice: PhysicalDevice, queueFamilyIndex: u32, display: ^wl_display) -> b32
 ProcGetPhysicalDeviceWin32PresentationSupportKHR                     :: #type proc "system" (physicalDevice: PhysicalDevice, queueFamilyIndex: u32) -> b32
-ProcGetPhysicalDeviceXcbPresentationSupportKHR                       :: #type proc "system" (physicalDevice: PhysicalDevice, queueFamilyIndex: u32, connection: ^xcb_connection_t, visual_id: xcb_visualid_t) -> b32
+ProcGetPhysicalDeviceXcbPresentationSupportKHR                       :: #type proc "system" (physicalDevice: PhysicalDevice, queueFamilyIndex: u32, connection: ^xcb.connection_t, visual_id: xcb.visualid_t) -> b32
 ProcGetPhysicalDeviceXlibPresentationSupportKHR                      :: #type proc "system" (physicalDevice: PhysicalDevice, queueFamilyIndex: u32, dpy: ^XlibDisplay, visualID: XlibVisualID) -> b32
 ProcGetWinrtDisplayNV                                                :: #type proc "system" (physicalDevice: PhysicalDevice, deviceRelativeId: u32, pDisplay: ^DisplayKHR) -> Result
 ProcReleaseDisplayEXT                                                :: #type proc "system" (physicalDevice: PhysicalDevice, display: DisplayKHR) -> Result

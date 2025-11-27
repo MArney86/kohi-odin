@@ -1,11 +1,11 @@
 package vulkan_backend
 
-import types "../../types"
+import types "../../../types"
 import vk "vendor:vulkan/dynamic"
 import strings "core:strings"
 import runtime "base:runtime"
-import logger "../../core/logger"
-import darray "../../containers/darray"
+import logger "../../../core/logger"
+import darray "../../../containers/darray"
 vk_context : types.vulkan_context
 
 initialize :: proc(backend: ^types.renderer_backend, application_name: string, plat_state: ^types.platform_state) -> bool {

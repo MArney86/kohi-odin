@@ -3,6 +3,7 @@
 //
 package vulkan_lib
 import "core:c"
+import "vendor:x11/xcb"
 
 import win32 "core:sys/windows"
 _ :: win32
@@ -45,8 +46,8 @@ when xlib.IS_SUPPORTED {
 	XlibVisualID :: c.ulong
 }
 
-xcb_visualid_t :: u32
-xcb_window_t   :: u32
+xcb.visualid_t :: u32
+xcb.window_t   :: u32
 CAMetalLayer   :: struct {}
 
 MTLBuffer_id       :: rawptr
@@ -9348,8 +9349,8 @@ XcbSurfaceCreateInfoKHR :: struct {
 	sType:      StructureType,
 	pNext:      rawptr,
 	flags:      XcbSurfaceCreateFlagsKHR,
-	connection: ^xcb_connection_t,
-	window:     xcb_window_t,
+	connection: ^xcb.connection_t,
+	window:     xcb.window_t,
 }
 
 PhysicalDevicePortabilitySubsetFeaturesKHR :: struct {
@@ -10601,7 +10602,7 @@ VideoEncodeH265ReferenceInfo :: struct {
 
 wl_surface       :: struct {} // Opaque struct defined by Wayland
 wl_display       :: struct {} // Opaque struct defined by Wayland
-xcb_connection_t :: struct {} // Opaque struct defined by xcb
+xcb_connection_t :: xcb.connection_t // Opaque struct defined by xcb
 IOSurfaceRef     :: struct {} // Opaque struct defined by Apple’s CoreGraphics framework
 // Aliases
 PhysicalDeviceVariablePointerFeatures                       :: PhysicalDeviceVariablePointersFeatures

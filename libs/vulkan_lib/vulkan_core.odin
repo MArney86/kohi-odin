@@ -1,5 +1,8 @@
 package vulkan_lib
 
+import "base:runtime"
+import fmt "core:fmt"
+
 // Core API
 API_VERSION_1_0 :: (1<<22) | (0<<12) | (0)
 API_VERSION_1_1 :: (1<<22) | (1<<12) | (0)
@@ -9,6 +12,22 @@ API_VERSION_1_4 :: (1<<22) | (4<<12) | (0)
 
 MAKE_VERSION :: proc(major, minor, patch: u32) -> u32 {
 	return (major<<22) | (minor<<12) | (patch)
+}
+
+VERSION_MAJOR :: proc (version: u32) -> u32 {
+	return version >> 22
+}
+
+VERSION_MINOR :: proc (version: u32) -> u32 {
+	return (version >> 12) & 0x3FF
+}
+
+VERSION_PATCH :: proc (version: u32) -> u32 {
+	return version & 0xFFF
+}
+
+CHECK :: proc (result: Result, call: string = #caller_expression, loc: runtime.Source_Code_Location = #caller_location) {
+        assert(result == .SUCCESS, fmt.tprintf("Vulkan call '%s' failed with error code %s", call, fmt.enum_value_to_string(result)), loc)
 }
 
 // Base types

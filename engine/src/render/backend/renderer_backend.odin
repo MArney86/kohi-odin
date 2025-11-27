@@ -2,7 +2,7 @@ package backend
 
 import types "../../types"
 import logger "../../core/logger"
-import vulkan_backend "../vulkan"
+import vulkan_backend "./vulkan"
 
 create :: proc(type: types.renderer_backend_type, plat_state: ^types.platform_state, out_backend: ^types.renderer_backend) -> bool {
     out_backend.plat_state = plat_state

@@ -39,4 +39,8 @@ vulkan_device :: struct {
     properties: vk.PhysicalDeviceProperties,
     features: vk.PhysicalDeviceFeatures,
     memory: vk.PhysicalDeviceMemoryProperties,
+
+    graphics_queue: vk.Queue,
+    present_queue: vk.Queue,
+    transfer_queue: vk.Queue,
 }
