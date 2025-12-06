@@ -11,6 +11,7 @@ import console "../console"
 //Helpers for string conversions between UTF-8 and UTF-16 on Windows.
 import str "../string"
 import vk "vendor:vulkan/dynamic"
+import event "../event"
 
 // Windows layer
 when ODIN_OS == .Windows {
@@ -34,8 +35,9 @@ when ODIN_OS == .Windows {
                 // Notify the OS that erasing will be handled by the application to prevent flicker
                 return 1
             case win32.WM_CLOSE:
-                //TODO: Fire an event for the application to quit.
-                return 0
+                data: types.event_context = {}
+                event.fire(cast(u16)types.system_event_codes.EVENT_CODE_APPLICATION_QUIT, nil, data)
+                return cast(win32.LRESULT)true
             case win32.WM_DESTROY:
                 // Post a quit message to the message queue
                 win32.PostQuitMessage(0)

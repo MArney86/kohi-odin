@@ -212,7 +212,7 @@ physical_device_meets_requirements :: proc(
         logger.TRACE("Transfer Family Index: %i", out_queue_info.transfer_family_index)
 
         // Queue swapchain support.
-        vulkan_device_query_swapchain_support(device, surface, out_swapchain_support)
+        device_query_swapchain_support(device, surface, out_swapchain_support)
         if out_swapchain_support.format_count < 1 || out_swapchain_support.present_mode_count < 1 {
             if out_swapchain_support.formats != nil {
                 mem.Free(out_swapchain_support.formats, cast(u64)size_of(vk.SurfaceFormatKHR) * cast(u64)out_swapchain_support.format_count, types.memory_tag.MEMORY_TAG_RENDERER)
@@ -276,7 +276,7 @@ physical_device_meets_requirements :: proc(
     return false
 }
 
-vulkan_device_create :: proc(vk_context : ^types.vulkan_context) -> bool {
+device_create :: proc(vk_context : ^types.vulkan_context) -> bool {
     if !select_physical_device(vk_context) {
         return false
     }
@@ -312,9 +312,10 @@ vulkan_device_create :: proc(vk_context : ^types.vulkan_context) -> bool {
         queue_create_infos[i].sType = vk.StructureType.DEVICE_QUEUE_CREATE_INFO
         queue_create_infos[i].queueFamilyIndex = indices[i]
         queue_create_infos[i].queueCount = 1
-        if indices[i] == cast(u32)vk_context.device.graphics_queue_index {
-            queue_create_infos[i].queueCount = 2
-        }
+        //TODO: enable this for future enhancement
+        //if indices[i] == cast(u32)vk_context.device.graphics_queue_index {
+        //    queue_create_infos[i].queueCount = 2
+        //}
         queue_create_infos[i].flags = nil
         queue_create_infos[i].pNext = nil
         queue_create_infos[i].pQueuePriorities = &queue_priority
@@ -350,7 +351,7 @@ vulkan_device_create :: proc(vk_context : ^types.vulkan_context) -> bool {
     return true
 }
 
-vulkan_device_destroy :: proc(vk_context : ^types.vulkan_context) {
+device_destroy :: proc(vk_context : ^types.vulkan_context) {
     
     // Null out queues
     vk_context.device.graphics_queue = nil
@@ -386,7 +387,7 @@ vulkan_device_destroy :: proc(vk_context : ^types.vulkan_context) {
     vk_context.device.transfer_queue_index = -1
 }
 
-vulkan_device_query_swapchain_support :: proc(
+device_query_swapchain_support :: proc(
     physical_device: vk.PhysicalDevice, 
     surface: vk.SurfaceKHR, 
     out_support_info: ^types.vulkan_swapchain_support_info) {
@@ -424,4 +425,30 @@ vulkan_device_query_swapchain_support :: proc(
         }
         vk.CHECK(vk.GetPhysicalDeviceSurfacePresentModesKHR(physical_device, surface, &out_support_info.present_mode_count, raw_data(out_support_info.present_modes^)))
     }
+}
+
+device_detect_depth_format :: proc(device: ^types.vulkan_device) -> bool {
+    candidate_count: u64 = 3
+    candidates: [3]vk.Format = {
+        vk.Format.D32_SFLOAT,
+        vk.Format.D32_SFLOAT_S8_UINT,
+        vk.Format.D24_UNORM_S8_UINT
+    }
+
+    flags := vk.FormatFeatureFlags{.DEPTH_STENCIL_ATTACHMENT}
+
+    for i:u64=0; i<candidate_count; i+=1 {
+        properties: vk.FormatProperties
+        vk.GetPhysicalDeviceFormatProperties(device.physical_device, candidates[i], &properties)
+
+        if (properties.linearTilingFeatures & flags) == flags {
+            device.depth_format = candidates[i]
+            return true
+        } else if (properties.optimalTilingFeatures & flags) == flags {
+            device.depth_format = candidates[i]
+            return true
+        }
+    }
+
+    return false
 }

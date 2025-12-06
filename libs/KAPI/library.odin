@@ -303,307 +303,186 @@ load_kohi_api :: proc() -> bool {
     }
 
     // Check if functions loaded successfully
-    if KAPI.core.mem.allocate == nil || 
-       KAPI.core.mem.free == nil || 
-       KAPI.core.mem.copy_memory == nil ||
-       KAPI.core.log.DEBUG == nil || 
-       KAPI.core.log.INFO == nil || 
-       KAPI.core.log.FATAL == nil ||
-       KAPI.core.app.application_create == nil || 
-       KAPI.core.app.application_run == nil ||
-       KAPI.core.mem.initialize_memory == nil || 
-       KAPI.core.mem.shutdown_memory == nil ||
-       KAPI.core.asserts.ASSERT == nil || 
-       KAPI.core.asserts.ASSERT_MSG == nil || 
-       KAPI.core.asserts.ASSERT_DEBUG == nil ||
-       KAPI.core.log.ERROR == nil || 
-       KAPI.core.log.WARN == nil || 
-       KAPI.core.log.TRACE == nil ||
-       KAPI.core.mem.zero_memory == nil || 
-       KAPI.core.mem.set_memory == nil ||
-       KAPI.core.mem.get_memory_usage_str == nil ||
-       KAPI.core.str.string_length == nil ||
-       KAPI.core.str.cstring_length == nil ||
-       KAPI.core.str.string16_length == nil ||
-       KAPI.core.str.cstring16_length == nil ||
-       KAPI.core.str.string_duplicate == nil ||
-       KAPI.core.str.cstring_duplicate == nil ||
-       KAPI.core.str.string16_duplicate == nil ||
-       KAPI.core.str.cstring16_duplicate == nil ||
-       KAPI.core.str.string_equal == nil ||
-       KAPI.core.str.cstring_equal == nil ||
-       KAPI.core.str.string16_equal == nil ||
-       KAPI.core.str.cstring16_equal == nil ||
-       KAPI.core.str.to_wstring == nil ||
-       KAPI.core.str.from_wstring == nil ||
-       KAPI.core.str.bytes_to_cstring == nil ||
-       KAPI.core.event.event_register == nil || 
-       KAPI.core.event.event_unregister == nil ||
-       KAPI.core.event.event_fire == nil ||
-       KAPI.core.input.is_key_down == nil ||
-       KAPI.core.input.is_key_up == nil ||
-       KAPI.core.input.was_key_down == nil ||
-       KAPI.core.input.was_key_up == nil ||
-       KAPI.core.input.is_button_down == nil ||
-       KAPI.core.input.is_button_up == nil ||
-       KAPI.core.input.was_button_down == nil ||
-       KAPI.core.input.was_button_up == nil ||
-       KAPI.core.input.get_mouse_position == nil ||
-       KAPI.core.input.get_previous_mouse_position == nil ||
-       KAPI.containers.darray.make == nil ||
-       KAPI.containers.darray.delete == nil ||
-       KAPI.containers.darray.reserve == nil ||
-       KAPI.containers.darray.resize == nil ||
-       KAPI.containers.darray.push == nil ||
-       KAPI.containers.darray.pop == nil ||
-       KAPI.containers.darray.insert_at == nil ||
-       KAPI.containers.darray.pop_at == nil ||
-       KAPI.containers.darray.clear == nil ||
-       KAPI.containers.darray.set_len == nil ||
-       KAPI.API_VERSION == 0 ||
-       KAPI.ENGINE_VERSION == 0 {
+    if KAPI.core.mem.allocate == nil {
+        append(nil_list, "Kallocate")
+    }
+    if KAPI.core.mem.free == nil {
+        append(nil_list, "Kfree")
+    }
+    if KAPI.core.mem.copy_memory == nil {
+        append(nil_list, "Kcopy_memory")
+    }
+    if KAPI.core.mem.zero_memory == nil {
+        append(nil_list, "Kzero_memory")
+    }
+    if KAPI.core.mem.set_memory == nil {
+        append(nil_list, "Kset_memory")
+    }
+    if KAPI.core.mem.get_memory_usage_str == nil {
+        append(nil_list, "Kget_memory_usage_str")
+    }
+    if KAPI.core.log.DEBUG == nil {
+        append(nil_list, "KDEBUG")
+    }
+    if KAPI.core.log.INFO == nil {
+        append(nil_list, "KINFO")
+    }
+    if KAPI.core.log.FATAL == nil {
+        append(nil_list, "KFATAL")
+    }
+    if KAPI.core.log.ERROR == nil {
+        append(nil_list, "KERROR")
+    }
+    if KAPI.core.log.WARN == nil {
+        append(nil_list, "KWARN")
+    }
+    if KAPI.core.log.TRACE == nil {
+        append(nil_list, "KTRACE")
+    }
+    if KAPI.core.asserts.ASSERT == nil {
+        append(nil_list, "KASSERT")
+    }
+    if KAPI.core.asserts.ASSERT_MSG == nil {
+        append(nil_list, "KASSERT_MSG")
+    }
+    if KAPI.core.asserts.ASSERT_DEBUG == nil {
+        append(nil_list, "KASSERT_DEBUG")
+    }
+    if KAPI.core.app.application_create == nil {
+        append(nil_list, "Kapplication_create")
+    }
+    if KAPI.core.app.application_run == nil {
+        append(nil_list, "Kapplication_run")
+    }
+    if KAPI.core.mem.initialize_memory == nil {
+        append(nil_list, "Kinitialize_memory")
+    }
+    if KAPI.core.mem.shutdown_memory == nil {
+        append(nil_list, "Kshutdown_memory")
+    }
+    if KAPI.core.str.string_length == nil {
+        append(nil_list, "Kstring_length")
+    }
+    if KAPI.core.str.cstring_length == nil {
+        append(nil_list, "Kcstring_length")
+    }
+    if KAPI.core.str.string16_length == nil {
+        append(nil_list, "Kstring16_length")
+    }
+    if KAPI.core.str.cstring16_length == nil {
+        append(nil_list, "Kcstring16_length")
+    }
+    if KAPI.core.str.string_duplicate == nil {
+        append(nil_list, "Kstring_duplicate")
+    }
+    if KAPI.core.str.cstring_duplicate == nil {
+        append(nil_list, "Kcstring_duplicate")
+    }
+    if KAPI.core.str.string16_duplicate == nil {
+        append(nil_list, "Kstring16_duplicate")
+    }
+    if KAPI.core.str.cstring16_duplicate == nil {
+        append(nil_list, "Kcstring16_duplicate")
+    }
+    if KAPI.core.str.string_equal == nil {
+        append(nil_list, "Kstring_equal")
+    }
+    if KAPI.core.str.cstring_equal == nil {
+        append(nil_list, "Kcstring_equal")
+    }
+    if KAPI.core.str.string16_equal == nil {
+        append(nil_list, "Kstring16_equal")
+    }
+    if KAPI.core.str.cstring16_equal == nil {
+        append(nil_list, "Kcstring16_equal")
+    }
+    if KAPI.core.str.to_wstring == nil {
+        append(nil_list, "Kto_wstring")
+    }
+    if KAPI.core.str.from_wstring == nil {
+        append(nil_list, "Kfrom_wstring")
+    }
+    if KAPI.core.str.bytes_to_cstring == nil {
+        append(nil_list, "Kbytes_to_cstring")
+    }
+    if KAPI.core.event.event_register == nil {
+        append(nil_list, "Kevent_register")
+    }
+    if KAPI.core.event.event_unregister == nil {
+        append(nil_list, "Kevent_unregister")
+    }
+    if KAPI.core.event.event_fire == nil {
+        append(nil_list, "Kevent_fire")
+    }
+    if KAPI.core.input.is_key_down == nil {
+        append(nil_list, "Kis_key_down")
+    }
+    if KAPI.core.input.is_key_up == nil {
+        append(nil_list, "Kis_key_up")
+    }
+    if KAPI.core.input.was_key_down == nil {
+        append(nil_list, "Kwas_key_down")
+    }
+    if KAPI.core.input.was_key_up == nil {
+        append(nil_list, "Kwas_key_up")
+    }
+    if KAPI.core.input.is_button_down == nil {
+        append(nil_list, "Kis_button_down")
+    }
+    if KAPI.core.input.is_button_up == nil {
+        append(nil_list, "Kis_button_up")
+    }
+    if KAPI.core.input.was_button_down == nil {
+        append(nil_list, "Kwas_button_down")
+    }
+    if KAPI.core.input.was_button_up == nil {
+        append(nil_list, "Kwas_button_up")
+    }
+    if KAPI.core.input.get_mouse_position == nil {
+        append(nil_list, "Kget_mouse_position")
+    }
+    if KAPI.core.input.get_previous_mouse_position == nil {
+        append(nil_list, "Kget_previous_mouse_position")
+    }
+    if KAPI.containers.darray.make == nil {
+        append(nil_list, "Kdarray_make")
+    }
+    if KAPI.containers.darray.delete == nil {
+        append(nil_list, "Kdarray_delete")
+    }
+    if KAPI.containers.darray.reserve == nil {
+        append(nil_list, "Kdarray_reserve")
+    }
+    if KAPI.containers.darray.resize == nil {
+        append(nil_list, "Kdarray_resize")
+    }
+    if KAPI.containers.darray.push == nil {
+        append(nil_list, "Kdarray_push")
+    }
+    if KAPI.containers.darray.pop == nil {
+        append(nil_list, "Kdarray_pop")
+    }
+    if KAPI.containers.darray.insert_at == nil {
+        append(nil_list, "Kdarray_insert_at")
+    }
+    if KAPI.containers.darray.pop_at == nil {
+        append(nil_list, "Kdarray_pop_at")
+    }
+    if KAPI.containers.darray.clear == nil {
+        append(nil_list, "Kdarray_clear")
+    }
+    if KAPI.containers.darray.set_len == nil {
+        append(nil_list, "Kdarray_set_len")
+    }
+    if KAPI.API_VERSION == 0 {
+        append(nil_list, "KAPI_VERSION")
+    }
+    if KAPI.ENGINE_VERSION == 0 {
+        append(nil_list, "KENGINE_VERSION")
+    }
+    if len(nil_list) != 0 {
         dynlib.unload_library(lib)
-        fmt.eprintf("One or more required function pointers are null in the loaded library %s\n", dll_name)
-        nil_list : [59]string
-        index: = 0
-        if KAPI.core.mem.allocate == nil {
-           nil_list[index] = "Kallocate"
-           index += 1
-        }
-        if KAPI.core.mem.free == nil {
-            nil_list[index] = "Kfree"
-            index += 1
-        }
-        if KAPI.core.mem.copy_memory == nil {
-            nil_list[index] = "Kcopy_memory"
-            index += 1
-        }
-        if KAPI.core.mem.zero_memory == nil {
-            nil_list[index] = "Kzero_memory"
-            index += 1
-        }
-        if KAPI.core.mem.set_memory == nil {
-            nil_list[index] = "Kset_memory"
-            index += 1
-        }
-        if KAPI.core.mem.get_memory_usage_str == nil {
-            nil_list[index] = "Kget_memory_usage_str"
-            index += 1
-        }
-        if KAPI.core.log.DEBUG == nil {
-            nil_list[index] = "KDEBUG"
-            index += 1
-        }
-        if KAPI.core.log.INFO == nil {
-            nil_list[index] = "KINFO"
-            index += 1
-        }
-        if KAPI.core.log.FATAL == nil {
-            nil_list[index] = "KFATAL"
-            index += 1
-        }
-        if KAPI.core.log.ERROR == nil {
-            nil_list[index] = "KERROR"
-            index += 1
-        }
-        if KAPI.core.log.WARN == nil {
-            nil_list[index] = "KWARN"
-            index += 1
-        }
-        if KAPI.core.log.TRACE == nil {
-            nil_list[index] = "KTRACE"
-            index += 1
-        }
-        if KAPI.core.asserts.ASSERT == nil {
-            nil_list[index] = "KASSERT"
-            index += 1
-        }
-        if KAPI.core.asserts.ASSERT_MSG == nil {
-            nil_list[index] = "KASSERT_MSG"
-            index += 1
-        }
-        if KAPI.core.asserts.ASSERT_DEBUG == nil {
-            nil_list[index] = "KASSERT_DEBUG"
-            index += 1
-        }
-        if KAPI.core.app.application_create == nil {
-            nil_list[index] = "Kapplication_create"
-            index += 1
-        }
-        if KAPI.core.app.application_run == nil {
-            nil_list[index] = "Kapplication_run"
-            index += 1
-        }
-        if KAPI.core.mem.initialize_memory == nil {
-            nil_list[index] = "Kinitialize_memory"
-            index += 1
-        }
-        if KAPI.core.mem.shutdown_memory == nil {
-            nil_list[index] = "Kshutdown_memory"
-            index += 1
-        }
-        if KAPI.core.str.string_length == nil {
-            nil_list[index] = "Kstring_length"
-            index += 1
-        }
-        if KAPI.core.str.cstring_length == nil {
-            nil_list[index] = "Kcstring_length"
-            index += 1
-        }
-        if KAPI.core.str.string16_length == nil {
-            nil_list[index] = "Kstring16_length"
-            index += 1
-        }
-        if KAPI.core.str.cstring16_length == nil {
-            nil_list[index] = "Kcstring16_length"
-            index += 1
-        }
-        if KAPI.core.str.string_duplicate == nil {
-            nil_list[index] = "Kstring_duplicate"
-            index += 1
-        }
-        if KAPI.core.str.cstring_duplicate == nil {
-            nil_list[index] = "Kcstring_duplicate"
-            index += 1
-        }
-        if KAPI.core.str.string16_duplicate == nil {
-            nil_list[index] = "Kstring16_duplicate"
-            index += 1
-        }
-        if KAPI.core.str.cstring16_duplicate == nil {
-            nil_list[index] = "Kcstring16_duplicate"
-            index += 1
-        }
-        if KAPI.core.str.string_equal == nil {
-            nil_list[index] = "Kstring_equal"
-            index += 1
-        }
-        if KAPI.core.str.cstring_equal == nil {
-            nil_list[index] = "Kcstring_equal"
-            index += 1
-        }
-        if KAPI.core.str.string16_equal == nil {
-            nil_list[index] = "Kstring16_equal"
-            index += 1
-        }
-        if KAPI.core.str.cstring16_equal == nil {
-            nil_list[index] = "Kcstring16_equal"
-            index += 1
-        }
-        if KAPI.core.str.to_wstring == nil {
-            nil_list[index] = "Kto_wstring"
-            index += 1
-        }
-        if KAPI.core.str.from_wstring == nil {
-            nil_list[index] = "Kfrom_wstring"
-            index += 1
-        }
-        if KAPI.core.str.bytes_to_cstring == nil {
-            nil_list[index] = "Kbytes_to_cstring"
-            index += 1
-        }
-        if KAPI.core.event.event_register == nil {
-            nil_list[index] = "Kevent_register"
-            index += 1
-        }
-        if KAPI.core.event.event_unregister == nil {
-            nil_list[index] = "Kevent_unregister"
-            index += 1
-        }
-        if KAPI.core.event.event_fire == nil {
-            nil_list[index] = "Kevent_fire"
-            index += 1
-        }
-        if KAPI.core.input.is_key_down == nil {
-            nil_list[index] = "Kis_key_down"
-            index += 1
-        }
-        if KAPI.core.input.is_key_up == nil {
-            nil_list[index] = "Kis_key_up"
-            index += 1
-        }
-        if KAPI.core.input.was_key_down == nil {
-            nil_list[index] = "Kwas_key_down"
-            index += 1
-        }
-        if KAPI.core.input.was_key_up == nil {
-            nil_list[index] = "Kwas_key_up"
-            index += 1
-        }
-        if KAPI.core.input.is_button_down == nil {
-            nil_list[index] = "Kis_button_down"
-            index += 1
-        }
-        if KAPI.core.input.is_button_up == nil {
-            nil_list[index] = "Kis_button_up"
-            index += 1
-        }
-        if KAPI.core.input.was_button_down == nil {
-            nil_list[index] = "Kwas_button_down"
-            index += 1
-        }
-        if KAPI.core.input.was_button_up == nil {
-            nil_list[index] = "Kwas_button_up"
-            index += 1
-        }
-        if KAPI.core.input.get_mouse_position == nil {
-            nil_list[index] = "Kget_mouse_position"
-            index += 1
-        }
-        if KAPI.core.input.get_previous_mouse_position == nil {
-            nil_list[index] = "Kget_previous_mouse_position"
-            index += 1
-        }
-        if KAPI.containers.darray.make == nil {
-            nil_list[index] = "Kdarray_make"
-            index += 1  
-        }
-        if KAPI.containers.darray.delete == nil {
-            nil_list[index] = "Kdarray_delete"
-            index += 1  
-        }
-        if KAPI.containers.darray.reserve == nil {
-            nil_list[index] = "Kdarray_reserve"
-            index += 1  
-        }
-        if KAPI.containers.darray.resize == nil {
-            nil_list[index] = "Kdarray_resize"
-            index += 1  
-        }
-        if KAPI.containers.darray.push == nil {
-            nil_list[index] = "Kdarray_push"
-            index += 1  
-        }
-        if KAPI.containers.darray.pop == nil {
-            nil_list[index] = "Kdarray_pop"
-            index += 1  
-        }
-        if KAPI.containers.darray.insert_at == nil {
-            nil_list[index] = "Kdarray_insert_at"
-            index += 1  
-        }
-        if KAPI.containers.darray.pop_at == nil {
-            nil_list[index] = "Kdarray_pop_at"
-            index += 1  
-        }
-        if KAPI.containers.darray.clear == nil {
-            nil_list[index] = "Kdarray_clear"
-            index += 1  
-        }
-        if KAPI.containers.darray.set_len == nil {
-            nil_list[index] = "Kdarray_set_len"
-            index += 1  
-        }
-        if KAPI.API_VERSION == 0 {
-            nil_list[index] = "KAPI_VERSION"
-            index += 1
-        }
-        if KAPI.ENGINE_VERSION == 0 {
-            nil_list[index] = "KENGINE_VERSION"
-            index += 1
-        }
-
-        fmt.eprintf("Null function pointers: %v\n", nil_list)
+        fmt.eprintf("%d Null function pointers: %v\n", len(nil_list), nil_list)
         return false
     }
 

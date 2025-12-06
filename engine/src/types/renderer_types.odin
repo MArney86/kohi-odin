@@ -1,4 +1,5 @@
 package types
+import vk "vendor:vulkan/dynamic"
 
 renderer_backend_type :: enum{
     RENDERER_BACKEND_TYPE_VULKAN,
@@ -30,3 +31,4 @@ static_mesh_data :: struct {
 render_packet :: struct {
     delta_time: f32,
 }
+

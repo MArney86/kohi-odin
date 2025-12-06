@@ -1,18 +1,23 @@
 package vulkan_backend
 
+import "base:sanitizer"
+import "core:mem"
 import types "../../../types"
 import vk "vendor:vulkan/dynamic"
 import strings "core:strings"
 import runtime "base:runtime"
 import logger "../../../core/logger"
 import darray "../../../containers/darray"
-vk_context : types.vulkan_context
+vk_context: types.vulkan_context
 
 initialize :: proc(backend: ^types.renderer_backend, application_name: string, plat_state: ^types.platform_state) -> bool {
     loaded := vk.initialize()
     if !loaded {
+        logger.ERROR("Failed to load Vulkan library.")
         return false
     }
+    // function pointers
+    vk_context.find_memory_index = find_memory_index;
 
     //TODO: custom allocator
     vk_context.allocator = nil
@@ -112,17 +117,28 @@ initialize :: proc(backend: ^types.renderer_backend, application_name: string, p
         return false
     }
 
-    if !vulkan_device_create(&vk_context) {
+    if !device_create(&vk_context) {
         logger.ERROR("Failed to create Vulkan device.")
         return false
     }
+
+    swapchain_create(&vk_context, vk_context.framebuffer_width, vk_context.framebuffer_height, &vk_context.swapchain)
 
     logger.INFO("Vulkan renderer initialized successfully.")
     return true
 }
 
 shutdown :: proc(backend: ^types.renderer_backend) {
+    swapchain_destroy(&vk_context, &vk_context.swapchain)
+
+    logger.DEBUG("Destroying Vulkan device...")
+    device_destroy(&vk_context)
         
+    logger.DEBUG("Destroying Vulkan surface...")
+    if vk_context.surface != vk.SurfaceKHR(0) {
+        vk.DestroySurfaceKHR(vk_context.instance, vk_context.surface, vk_context.allocator)
+        vk_context.surface = vk.SurfaceKHR(0)
+    }
     when ODIN_DEBUG {
         logger.DEBUG("Destroying Vulkan resources...")
 
@@ -131,6 +147,7 @@ shutdown :: proc(backend: ^types.renderer_backend) {
             vk_context.debug_messenger = vk.DebugUtilsMessengerEXT(0)
         }
     }
+    
     logger.DEBUG("Destroying Vulkan instance...")
     if vk_context.instance != nil {
         vk.DestroyInstance(vk_context.instance, vk_context.allocator)
@@ -173,4 +190,19 @@ vk_debug_callback :: proc "system" (
     }
     
     return false
+}
+
+find_memory_index :: proc(type_filter: u32, property_flags: u32) -> i32 {
+    memory_properties: vk.PhysicalDeviceMemoryProperties = vk.PhysicalDeviceMemoryProperties{}
+    vk.GetPhysicalDeviceMemoryProperties(vk_context.device.physical_device, &memory_properties)
+
+    flags := transmute(vk.MemoryPropertyFlags)property_flags
+    for i:u32=0; i<memory_properties.memoryTypeCount; i += 1 {
+        if (type_filter & (1 << i)) != 0 && (memory_properties.memoryTypes[i].propertyFlags & flags) == flags {
+            return cast(i32)i
+        }
+    }
+
+    logger.WARN("Unable to find suitable memory type!")
+    return -1
 }
