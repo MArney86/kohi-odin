@@ -2,6 +2,7 @@ package types
 
 import "core:image"
 import vk "vendor:vulkan/dynamic"
+import _c "core:c"
 
 find_memory_index_proc :: proc(u32, u32) -> i32
 
@@ -15,6 +16,7 @@ when ODIN_DEBUG {
         debug_messenger: vk.DebugUtilsMessengerEXT,
         device: vulkan_device,
         swapchain: vulkan_swapchain,
+        main_renderpass: vulkan_renderpass,
         image_index: u32,
         current_frame: u32,
         recreating_swapchain: bool,
@@ -29,6 +31,7 @@ when ODIN_DEBUG {
         surface: vk.SurfaceKHR,
         device: vulkan_device,
         swapchain: vulkan_swapchain,
+        main_renderpass: vulkan_renderpass,
         image_index: u32,
         current_frame: u32,
         recreating_swapchain: bool,
@@ -79,4 +82,36 @@ vulkan_image :: struct {
     view: vk.ImageView,
     width: u32,
     height: u32,
+}
+
+vulkan_renderpass :: struct {
+    handle: vk.RenderPass,
+    x, y, w, h : f32,
+    r, g, b, a : f32,
+    depth: f32,
+    stencil: u32,
+    state: vulkan_render_pass_state,
+}
+
+vulkan_render_pass_state :: enum _c.int{
+    READY,
+    RECORDING,
+    IN_RENDER_PASS,
+    RECORDING_ENDED,
+    SUBMITTED,
+    NOT_ALLOCATED,
+}
+
+vulkan_command_buffer :: struct {
+    handle: vk.CommandBuffer,
+    state: vulkan_command_buffer_state,
+}
+
+vulkan_command_buffer_state :: enum _c.int {
+    READY,
+    RECORDING,
+    IN_RENDER_PASS,
+    RECORDING_ENDED,
+    SUBMITTED,
+    NOT_ALLOCATED,
 }

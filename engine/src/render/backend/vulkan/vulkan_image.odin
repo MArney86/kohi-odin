@@ -4,7 +4,14 @@ import vk "vendor:vulkan/dynamic"
 import logger "../../../core/logger"
 import mem "../../../core/memory"
 
-image_create :: proc(vk_context: ^types.vulkan_context, width: u32, height: u32, format: vk.Format, tiling: vk.ImageTiling, usage: vk.ImageUsageFlags, memory_flags: vk.MemoryPropertyFlags, create_view: bool, view_aspect_flags: vk.ImageAspectFlags, out_image: ^types.vulkan_image) {
+image_create :: proc(vk_context: ^types.vulkan_context, 
+                     width: u32, height: u32, 
+                     format: vk.Format, tiling: vk.ImageTiling, 
+                     usage: vk.ImageUsageFlags, 
+                     memory_flags: vk.MemoryPropertyFlags, 
+                     create_view: bool, 
+                     view_aspect_flags: vk.ImageAspectFlags, 
+                     out_image: ^types.vulkan_image) {
     //copy parameters
     out_image.width = width
     out_image.height = height

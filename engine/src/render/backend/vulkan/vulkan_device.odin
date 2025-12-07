@@ -59,7 +59,9 @@ select_physical_device :: proc(vk_context : ^types.vulkan_context) -> bool {
         darray.i_push(requirements.device_extension_names, strings.clone_to_cstring(vk.KHR_SWAPCHAIN_EXTENSION_NAME))
 
         queue_info: vulkan_physical_device_queue_family_info = {}
-        result: bool = physical_device_meets_requirements(physical_devices[i], vk_context.surface, &properties, &features, &requirements, &queue_info, &vk_context.device.swapchain_support)
+        result: bool = physical_device_meets_requirements(physical_devices[i], vk_context.surface, 
+                                                          &properties, &features, &requirements, 
+                                                          &queue_info, &vk_context.device.swapchain_support)
 
         if result {
             logger.INFO ("Selected device: '%s'.", strings.clone_from_bytes(properties.deviceName[:]))
@@ -423,7 +425,8 @@ device_query_swapchain_support :: proc(
             raw := cast(^runtime.Raw_Dynamic_Array)out_support_info.present_modes
             raw.len = cast(int)out_support_info.present_mode_count
         }
-        vk.CHECK(vk.GetPhysicalDeviceSurfacePresentModesKHR(physical_device, surface, &out_support_info.present_mode_count, raw_data(out_support_info.present_modes^)))
+        vk.CHECK(vk.GetPhysicalDeviceSurfacePresentModesKHR(physical_device, surface, &out_support_info.present_mode_count, 
+                                                            raw_data(out_support_info.present_modes^)))
     }
 }
 

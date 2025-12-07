@@ -124,11 +124,15 @@ initialize :: proc(backend: ^types.renderer_backend, application_name: string, p
 
     swapchain_create(&vk_context, vk_context.framebuffer_width, vk_context.framebuffer_height, &vk_context.swapchain)
 
+    renderpass_create(&vk_context, &vk_context.main_renderpass, 0,0, cast(f32)vk_context.framebuffer_width, cast(f32)vk_context.framebuffer_height, 0, 0, 0.2, 1.0, 1.0, 0)
+
     logger.INFO("Vulkan renderer initialized successfully.")
     return true
 }
 
 shutdown :: proc(backend: ^types.renderer_backend) {
+    renderpass_destroy(&vk_context, &vk_context.main_renderpass)
+
     swapchain_destroy(&vk_context, &vk_context.swapchain)
 
     logger.DEBUG("Destroying Vulkan device...")

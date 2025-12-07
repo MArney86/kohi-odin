@@ -37,7 +37,7 @@ _create :: proc(vk_context: ^types.vulkan_context, width: u32, height: u32, swap
         device_query_swapchain_support(vk_context.device.physical_device, vk_context.surface, &vk_context.device.swapchain_support)
 
         //Swapchain extent
-        if vk_context.device.swapchain_support.capabilities.currentExtent.width != cast(u32)-1 {
+        if vk_context.device.swapchain_support.capabilities.currentExtent.width != ~u32(0) {
             swapchain_extent = vk_context.device.swapchain_support.capabilities.currentExtent
         }
 
@@ -49,7 +49,9 @@ _create :: proc(vk_context: ^types.vulkan_context, width: u32, height: u32, swap
 
         //Image count
         image_count: u32 = vk_context.device.swapchain_support.capabilities.minImageCount + 1
-        if vk_context.device.swapchain_support.capabilities.maxImageCount > 0 && image_count > vk_context.device.swapchain_support.capabilities.maxImageCount {
+        if vk_context.device.swapchain_support.capabilities.maxImageCount > 0 && 
+           image_count > vk_context.device.swapchain_support.capabilities.maxImageCount 
+           {
             image_count = vk_context.device.swapchain_support.capabilities.maxImageCount
         }
 
@@ -157,8 +159,14 @@ swapchain_destroy :: proc(vk_context: ^types.vulkan_context, swapchain: ^types.v
     _destroy(vk_context, swapchain)
 }
 
-swapchain_aquire_next_image_index :: proc(vk_context: ^types.vulkan_context, swapchain: ^types.vulkan_swapchain, timeout_ns: u64, image_available_semaphore: vk.Semaphore, fence: vk.Fence, out_image_index: ^u32) -> bool {
-    result: vk.Result = vk.AcquireNextImageKHR(vk_context.device.logical_device, swapchain.handle, timeout_ns, image_available_semaphore, fence, out_image_index)
+swapchain_aquire_next_image_index :: proc(vk_context: ^types.vulkan_context, 
+                                          swapchain: ^types.vulkan_swapchain, 
+                                          timeout_ns: u64, 
+                                          image_available_semaphore: vk.Semaphore, 
+                                          fence: vk.Fence, out_image_index: ^u32) -> bool {
+    result: vk.Result = vk.AcquireNextImageKHR(vk_context.device.logical_device, 
+                                               swapchain.handle, timeout_ns, 
+                                               image_available_semaphore, fence, out_image_index)
     if result == .ERROR_OUT_OF_DATE_KHR {
         swapchain_recreate(vk_context, vk_context.framebuffer_width, vk_context.framebuffer_height, swapchain)
         return false
@@ -169,7 +177,12 @@ swapchain_aquire_next_image_index :: proc(vk_context: ^types.vulkan_context, swa
     return true
 }
 
-swapchain_present :: proc(vk_context: ^types.vulkan_context, swapchain: ^types.vulkan_swapchain, graphics_queue: vk.Queue, present_queue: vk.Queue, render_complete_semaphore: vk.Semaphore, present_image_index: u32) {
+swapchain_present :: proc(vk_context: ^types.vulkan_context, 
+                          swapchain: ^types.vulkan_swapchain, 
+                          graphics_queue: vk.Queue, 
+                          present_queue: vk.Queue, 
+                          render_complete_semaphore: vk.Semaphore, 
+                          present_image_index: u32) {
     wait_semaphores := [1]vk.Semaphore{render_complete_semaphore}
     swapchains := [1]vk.SwapchainKHR{swapchain.handle}
     image_indices := [1]u32{present_image_index}
