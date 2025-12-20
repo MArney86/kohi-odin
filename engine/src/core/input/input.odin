@@ -93,7 +93,7 @@ process_key :: proc(key: types.keys, pressed: bool) {
         // fire off event for immediate processing
         event_context: types.event_context
         event_context.data.U16[0] = cast(u16)key
-        event.fire(cast(u16)(pressed ? types.system_event_codes.EVENT_CODE_KEY_PRESSED : types.system_event_codes.EVENT_CODE_KEY_RELEASED), nil, event_context)
+        event.fire(cast(u16)(pressed ? types.system_event_codes.EVENT_CODE_KEY_PRESSED : types.system_event_codes.EVENT_CODE_KEY_RELEASED), nil, &event_context)
 
 
     }
@@ -164,7 +164,7 @@ process_button :: proc(button: types.buttons, pressed: bool) {
         // fire off event for immediate processing
         event_context: types.event_context
         event_context.data.U16[0] = cast(u16)button
-        event.fire(u16(pressed ? types.system_event_codes.EVENT_CODE_BUTTON_PRESSED : types.system_event_codes.EVENT_CODE_BUTTON_RELEASED), nil, event_context)
+        event.fire(u16(pressed ? types.system_event_codes.EVENT_CODE_BUTTON_PRESSED : types.system_event_codes.EVENT_CODE_BUTTON_RELEASED), nil, &event_context)
     }
 }
 
@@ -182,7 +182,7 @@ process_mouse_move :: proc(x: i16, y: i16) {
         event_context: types.event_context
         event_context.data.U16[0] = cast(u16)x
         event_context.data.U16[1] = cast(u16)y
-        event.fire(u16(types.system_event_codes.EVENT_CODE_MOUSE_MOVED), nil, event_context)
+        event.fire(u16(types.system_event_codes.EVENT_CODE_MOUSE_MOVED), nil, &event_context)
     }
 }
 
@@ -192,5 +192,5 @@ process_mouse_wheel :: proc(z_delta: i8) {
     // fire off event for immediate processing
     event_context: types.event_context
     event_context.data.U8[0] = cast(u8)z_delta
-    event.fire(u16(types.system_event_codes.EVENT_CODE_MOUSE_WHEEL), nil, event_context)
+    event.fire(u16(types.system_event_codes.EVENT_CODE_MOUSE_WHEEL), nil, &event_context)
 }

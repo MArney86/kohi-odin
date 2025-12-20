@@ -53,7 +53,7 @@ memory_tag :: enum {
 }
 
 //Event types and definitions
-PFN_on_event :: ^proc(code: u16, sender: rawptr, listener_inst: rawptr, data: event_context) -> bool
+PFN_on_event :: proc(code: u16, sender: rawptr, listener_inst: rawptr, data: ^event_context) -> bool
 
 event_context :: struct {
     // 128 bytes union data

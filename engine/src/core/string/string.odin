@@ -176,6 +176,7 @@ wstring_to_str :: proc(s: cstring16) -> string {
     return string(final_buf)
 }
 
+//modified from core:string:bytes_to_string to make cstring and add error handling and logging
 bytes_to_cstr :: proc(data: []u8, loc: runtime.Source_Code_Location = #caller_location) -> cstring {
     length: u64 = 0
     for b in data {

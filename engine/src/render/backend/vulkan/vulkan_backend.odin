@@ -8,6 +8,8 @@ import strings "core:strings"
 import runtime "base:runtime"
 import logger "../../../core/logger"
 import darray "../../../containers/darray"
+import memory "../../../core/memory"
+
 vk_context: types.vulkan_context
 
 initialize :: proc(backend: ^types.renderer_backend, application_name: string, plat_state: ^types.platform_state) -> bool {
@@ -31,7 +33,7 @@ initialize :: proc(backend: ^types.renderer_backend, application_name: string, p
 
     create_info: vk.InstanceCreateInfo = {vk.StructureType.INSTANCE_CREATE_INFO,nil,vk.InstanceCreateFlags(nil),nil,0,nil,0,nil}
     create_info.pApplicationInfo = &app_info
-    required_extensions := cast(^[dynamic]cstring)darray.Make(cstring)
+    required_extensions := cast(^[dynamic]cstring)darray.make(typeid_of(cstring))
     temp : cstring = strings.clone_to_cstring(vk.KHR_SURFACE_EXTENSION_NAME)
     darray.push(cast(rawptr)required_extensions, cstring, &temp)
     get_required_extension_names(required_extensions)
@@ -51,8 +53,8 @@ initialize :: proc(backend: ^types.renderer_backend, application_name: string, p
     required_validation_count: u32 = 0
 
     when ODIN_DEBUG {
-        required_validation_layers = cast(^[dynamic]cstring)darray.Make(cstring)
-        defer darray.Delete(cast(rawptr)required_validation_layers, cstring)
+        required_validation_layers = cast(^[dynamic]cstring)darray.make(cstring)
+        defer darray.delete(cast(rawptr)required_validation_layers, cstring)
         temp = "VK_LAYER_KHRONOS_validation"
         logger.INFO("Validation layers enabled. Enumerating...")
         darray.push(cast(rawptr)required_validation_layers, cstring, &temp)
@@ -60,9 +62,9 @@ initialize :: proc(backend: ^types.renderer_backend, application_name: string, p
 
         available_layer_count: u32
         vk.CHECK(vk.EnumerateInstanceLayerProperties(&available_layer_count, nil))
-        available_layers := cast(^[dynamic]vk.LayerProperties)darray.Make(vk.LayerProperties)
-        defer darray.Delete(cast(rawptr)available_layers, vk.LayerProperties)
-        darray.Reserve(cast(rawptr)available_layers, vk.LayerProperties, cast(u64)available_layer_count)
+        available_layers := cast(^[dynamic]vk.LayerProperties)darray.make(vk.LayerProperties)
+        defer darray.delete(cast(rawptr)available_layers, vk.LayerProperties)
+        darray.reserve(cast(rawptr)available_layers, vk.LayerProperties, cast(u64)available_layer_count)
         vk.CHECK(vk.EnumerateInstanceLayerProperties(&available_layer_count, raw_data(available_layers^)))
         darray.set_len(cast(rawptr)available_layers, vk.LayerProperties, cast(u64)available_layer_count)
 
@@ -126,11 +128,24 @@ initialize :: proc(backend: ^types.renderer_backend, application_name: string, p
 
     renderpass_create(&vk_context, &vk_context.main_renderpass, 0,0, cast(f32)vk_context.framebuffer_width, cast(f32)vk_context.framebuffer_height, 0, 0, 0.2, 1.0, 1.0, 0)
 
+    create_command_buffers(backend)
+
     logger.INFO("Vulkan renderer initialized successfully.")
     return true
 }
 
 shutdown :: proc(backend: ^types.renderer_backend) {
+    // Clean up Vulkan resources in reverse order of creation
+
+    //command buffers
+    for i: u32; i < vk_context.swapchain.image_count; i += 1 {
+        if vk_context.graphics_command_buffers[i].handle != nil {
+            command_buffer_free(&vk_context, vk_context.device.graphics_command_pool, &vk_context.graphics_command_buffers[i])
+        }
+    }
+    darray.delete(vk_context.graphics_command_buffers)
+    vk_context.graphics_command_buffers = nil
+
     renderpass_destroy(&vk_context, &vk_context.main_renderpass)
 
     swapchain_destroy(&vk_context, &vk_context.swapchain)
@@ -209,4 +224,22 @@ find_memory_index :: proc(type_filter: u32, property_flags: u32) -> i32 {
 
     logger.WARN("Unable to find suitable memory type!")
     return -1
+}
+
+create_command_buffers :: proc(backend: ^types.renderer_backend) {
+    if vk_context.graphics_command_buffers == nil {
+        vk_context.graphics_command_buffers = cast(^[dynamic]types.vulkan_command_buffer)darray.make(typeid_of(types.vulkan_command_buffer))
+        darray.reserve(cast(rawptr)vk_context.graphics_command_buffers, typeid_of(types.vulkan_command_buffer), cast(u64)vk_context.swapchain.image_count)
+        for i: u32; i < vk_context.swapchain.image_count; i += 1 {
+            memory.zero_memory(&vk_context.graphics_command_buffers[i], size_of(types.vulkan_command_buffer))
+        }
+    }
+
+    for i: u32; i < vk_context.swapchain.image_count; i += 1 {
+        if vk_context.graphics_command_buffers[i].handle != nil {
+            command_buffer_allocate(&vk_context, vk_context.device.graphics_command_pool, true, &vk_context.graphics_command_buffers[i])
+        }
+    }
+
+    logger.DEBUG("Vulkan command buffers created.")
 }

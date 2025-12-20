@@ -39,7 +39,7 @@ initialize :: proc() -> bool {
 shutdown :: proc() {
     for i: u16; i < MAX_MESSAGE_CODES; i += 1 {
         if state.registered[i].events != nil {
-            darray.Delete(state.registered[i].events, typeid_of(registered_event));
+            darray.delete(state.registered[i].events, typeid_of(registered_event));
             state.registered[i].events = nil;
         }
     }
@@ -59,7 +59,7 @@ register :: proc(code: u16, listener_inst: rawptr, on_event: types.PFN_on_event)
     }
 
     if state.registered[code].events == nil {
-        array := cast(^[dynamic]registered_event)darray.Make(registered_event)
+        array := cast(^[dynamic]registered_event)darray.make(typeid_of(registered_event))
         state.registered[code].events = array
     }
 
@@ -126,7 +126,7 @@ unregister :: proc(code: u16, listener_inst: rawptr, on_event: types.PFN_on_even
  * @param data the event context data to send with the event.
  * @return TRUE if the event is successfully sent, FALSE otherwise.
  */
-fire :: proc(code: u16, sender: rawptr, event_context: types.event_context) -> bool {
+fire :: proc(code: u16, sender: rawptr, event_context: ^types.event_context) -> bool {
    if initialized == false {
         return false
     }
@@ -144,7 +144,7 @@ fire :: proc(code: u16, sender: rawptr, event_context: types.event_context) -> b
             logger.ERROR("Event callback is nil for code %d at index %d", code, i)
             continue
         }
-        if e.callback^(code, sender, e.listener, event_context) == true {
+        if e.callback(code, sender, e.listener, event_context) == true {
             // Event was handled, stop propagation
             return true
         }

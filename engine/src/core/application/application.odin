@@ -53,6 +53,10 @@ create :: proc "odin" (game_inst: ^types.game) -> bool {
         return false
     }
 
+    event.register(cast(u16)types.system_event_codes.EVENT_CODE_APPLICATION_QUIT, nil, application_on_event)
+    event.register(cast(u16)types.system_event_codes.EVENT_CODE_BUTTON_PRESSED, nil, application_on_key)
+    event.register(cast(u16)types.system_event_codes.EVENT_CODE_BUTTON_RELEASED, nil, application_on_key)
+
     if !platform.startup(&state.platform, 
                          game_inst.app_config.name,
                          cast(i32)game_inst.app_config.start_pos_x, 
@@ -156,9 +160,57 @@ run :: proc "odin" () -> bool {
     }
 
     state.is_running = false
+    
+    // Shutdown in reverse order of initialization
+    event.unregister(cast(u16)types.system_event_codes.EVENT_CODE_APPLICATION_QUIT, nil, application_on_event)
+    event.unregister(cast(u16)types.system_event_codes.EVENT_CODE_BUTTON_PRESSED, nil, application_on_key)
+    event.unregister(cast(u16)types.system_event_codes.EVENT_CODE_BUTTON_RELEASED, nil, application_on_key)
     event.shutdown()
     input.shutdown()
+    
+    renderer.shutdown()
 
     platform.shutdown(&state.platform)
+    
     return true
+}
+
+application_on_event :: proc(code: u16, sender: rawptr, listener_inst: rawptr, event_context: ^types.event_context) -> bool {
+    switch (code) {
+        case cast(u16)types.system_event_codes.EVENT_CODE_APPLICATION_QUIT: {
+            logger.INFO("EVENT_CODE_APPLICATION_QUIT recieved, shutting down.\n")
+            state.is_running = false;
+            return true
+        }
+    }
+
+    return false;
+}
+
+application_on_key :: proc(code: u16, sender: rawptr, listener_inst: rawptr, event_context: ^types.event_context) -> bool {
+    if code == u16(types.system_event_codes.EVENT_CODE_BUTTON_PRESSED) {
+        key_code: u16 = event_context.data.U16[0]
+        if key_code == u16(types.keys.KEY_ESCAPE) {
+            // NOTE: Technically firing an event to itself, but there may be other listeners
+            data := types.event_context{}
+            event.fire(u16(types.system_event_codes.EVENT_CODE_APPLICATION_QUIT), nil, &data)
+
+            //Block anything elee from processing this.
+            return true
+        } else if key_code == u16(types.keys.KEY_A) {
+            logger.DEBUG("explicit - A key pressed!")
+        }else {
+            //example of handling other keys
+            logger.DEBUG("explicit - %c key pressed in window", key_code)
+        }
+    } else if code == u16(types.system_event_codes.EVENT_CODE_BUTTON_RELEASED) {
+        key_code: u16 = event_context.data.U16[0]
+        if key_code == u16(types.keys.KEY_B) {
+            logger.DEBUG("explicit - B key released!")
+        } else {
+            //example of handling other keys
+            logger.DEBUG("explicit - %c key released in window", key_code)
+        }
+    }
+    return false;
 }

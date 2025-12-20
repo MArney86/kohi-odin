@@ -21,6 +21,11 @@ create :: proc(type: types.renderer_backend_type, plat_state: ^types.platform_st
 }
 
 destroy :: proc(backend: ^types.renderer_backend) {
+    // Call the backend's shutdown procedure before clearing function pointers
+    if backend.shutdown != nil {
+        backend.shutdown(backend)
+    }
+    
     backend.initialize = nil
     backend.shutdown = nil
     backend.resized = nil

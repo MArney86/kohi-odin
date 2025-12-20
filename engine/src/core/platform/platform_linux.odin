@@ -664,7 +664,8 @@ when ODIN_OS == .Linux {
     }
 
     get_required_extension_names :: proc(names_darray: ^[dynamic]cstring) {
-        append_elem(names_darray, cstring(vk.KHR_XCB_SURFACE_EXTENSION_NAME))
+        ext_name := cstring(vk.KHR_XCB_SURFACE_EXTENSION_NAME)
+        darray.push(cast(rawptr)names_darray, typeid_of(cstring), &ext_name)
     }
 
     create_vulkan_surface :: proc(plat_state: ^types.platform_state, vk_context: ^types.vulkan_context) -> bool {

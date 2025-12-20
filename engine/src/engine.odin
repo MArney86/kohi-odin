@@ -173,7 +173,7 @@ Kevent_unregister :: proc(event_type: u16, handler: rawptr, callback: types.PFN_
     return event.unregister(event_type, handler, callback)
 }
 @(export)
-Kevent_fire :: proc(event_type: u16, data: rawptr, e_context: types.event_context) -> bool {
+Kevent_fire :: proc(event_type: u16, data: rawptr, e_context: ^types.event_context) -> bool {
     return event.fire(event_type, data, e_context)
 }
 
@@ -222,43 +222,43 @@ Kget_previous_mouse_position :: proc(x: ^i32, y: ^i32){
 // dynamic arrays
 @(export)
 Kdarray_make :: proc(type: typeid) -> rawptr {
-    return darray.Make(type)
+    return darray.make_typeid(type)
 }
 @(export)
 Kdarray_reserve :: proc(array: rawptr, type: typeid, capacity: u64) -> bool {
-    return darray.Reserve(array, type, capacity)
+    return darray.reserve_typeid(array, type, capacity)
 }
 @(export)
 Kdarray_delete :: proc(array: rawptr, type: typeid) {
-    darray.Delete(array, type)
+    darray.delete_typeid(array, type)
 }
 @(export)
 Kdarray_push :: proc(array: rawptr, type: typeid, value: rawptr) -> bool {
-    return darray.push(array, type, value)
+    return darray.push_typeid(array, type, value)
 }
 @(export)
 Kdarray_pop :: proc(array: rawptr, type: typeid, out_value: rawptr) -> bool {
-    return darray.pop(array, type, out_value)
+    return darray.pop_typeid(array, type, out_value)
 }
 @(export)
 Kdarray_insert_at :: proc(array: rawptr, type: typeid, index: u64, value: rawptr) -> bool {
-    return darray.insert_at(array, type, index, value)
+    return darray.insert_at_typeid(array, type, index, value)
 }
 @(export)
 Kdarray_pop_at :: proc(array: rawptr, type: typeid, index: u64, out_value: rawptr) -> bool {
-    return darray.pop_at(array, type, index, out_value)
+    return darray.pop_at_typeid(array, type, index, out_value)
 }
 @(export)
 Kdarray_clear :: proc(array: rawptr, type: typeid) {
-    darray.Clear(array, type)
+    darray.clear_typeid(array, type)
 }
 @(export)
 Kdarray_resize :: proc(array: rawptr, type: typeid, new_length: u64) {
-    darray.Resize(array, type, new_length)
+    darray.resize_typeid(array, type, new_length)
 }
 @(export)
 Kdarray_set_len :: proc(array: rawptr, type: typeid, new_len: u64) {
-    darray.set_len(array, type, new_len)
+    darray.set_len_typeid(array, type, new_len)
 }
 
 // Version variables

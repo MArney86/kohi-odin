@@ -17,6 +17,9 @@ when ODIN_DEBUG {
         device: vulkan_device,
         swapchain: vulkan_swapchain,
         main_renderpass: vulkan_renderpass,
+        //darray
+        graphics_command_buffers: ^[dynamic]vulkan_command_buffer,
+        
         image_index: u32,
         current_frame: u32,
         recreating_swapchain: bool,
@@ -32,6 +35,9 @@ when ODIN_DEBUG {
         device: vulkan_device,
         swapchain: vulkan_swapchain,
         main_renderpass: vulkan_renderpass,
+        //darray
+        graphics_command_buffers: ^[dynamic]vulkan_command_buffer,
+
         image_index: u32,
         current_frame: u32,
         recreating_swapchain: bool,
@@ -62,6 +68,8 @@ vulkan_device :: struct {
     graphics_queue: vk.Queue,
     present_queue: vk.Queue,
     transfer_queue: vk.Queue,
+
+    graphics_command_pool: vk.CommandPool,
 
     depth_format: vk.Format
 }

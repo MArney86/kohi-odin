@@ -35,9 +35,12 @@ when ODIN_OS == .Windows {
                 // Notify the OS that erasing will be handled by the application to prevent flicker
                 return 1
             case win32.WM_CLOSE:
-                data: types.event_context = {}
-                event.fire(cast(u16)types.system_event_codes.EVENT_CODE_APPLICATION_QUIT, nil, data)
-                return cast(win32.LRESULT)true
+                // Fire application quit event to allow graceful shutdown
+                event_context: types.event_context
+                event.fire(u16(types.system_event_codes.EVENT_CODE_APPLICATION_QUIT), nil, &event_context)
+                // Post quit message to exit the message loop
+                win32.PostQuitMessage(0)
+                return 0
             case win32.WM_DESTROY:
                 // Post a quit message to the message queue
                 win32.PostQuitMessage(0)
@@ -190,7 +193,7 @@ when ODIN_OS == .Windows {
     }
 
     shutdown :: proc(plat_state: ^types.platform_state) {
-        state := cast(^internal_state)(plat_state.internal_state)
+        state := cast(^internal_state)plat_state.internal_state
 
         if state.h_wnd != nil {
             // Destroy the window
@@ -205,6 +208,11 @@ when ODIN_OS == .Windows {
         for win32.PeekMessageW(&message, nil, 0, 0, win32.PM_REMOVE) {
             win32.TranslateMessage(&message)
             win32.DispatchMessageW(&message)
+            
+            // Check for WM_QUIT message
+            if message.message == win32.WM_QUIT {
+                return false
+            }
         }
 
         return true
