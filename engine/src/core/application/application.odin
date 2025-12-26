@@ -1,7 +1,6 @@
 package application
 
 import types "../../types"
-import strings "core:strings"
 import logger "../logger"
 import clock "../clock"
 import input "../input"
@@ -65,7 +64,10 @@ create :: proc "odin" (game_inst: ^types.game) -> bool {
                          cast(i32)game_inst.app_config.height) {
         return false
     }
+    state.width = game_inst.app_config.width
+    state.height = game_inst.app_config.height
 
+    renderer.set_framebuffer_size(cast(u32)state.width, cast(u32)state.height)
     //renderer initialization
     if !renderer.initialize(game_inst.app_config.name,&state.platform) {
         logger.FATAL("Renderer failed to initialize! Aborting Application.")
@@ -213,4 +215,8 @@ application_on_key :: proc(code: u16, sender: rawptr, listener_inst: rawptr, eve
         }
     }
     return false;
+}
+
+set_framebuffer_size :: proc(width: u32, height: u32) {
+    renderer.set_framebuffer_size(width, height)
 }

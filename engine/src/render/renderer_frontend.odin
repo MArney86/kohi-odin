@@ -58,3 +58,7 @@ draw_frame :: proc(packet: ^types.render_packet) -> bool {
 
     return true
 }
+
+set_framebuffer_size :: proc(width: u32, height: u32) {
+    backend.set_framebuffer_size(width, height)
+}

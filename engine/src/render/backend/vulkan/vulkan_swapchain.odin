@@ -14,7 +14,8 @@ _create :: proc(vk_context: ^types.vulkan_context, width: u32, height: u32, swap
     found: bool = false
     for i:u32=0; i<vk_context.device.swapchain_support.format_count; i+=1 {
         format: vk.SurfaceFormatKHR = vk_context.device.swapchain_support.formats[i]
-        if format.format == .B8G8R8A8_UNORM && format.colorSpace == .SRGB_NONLINEAR {
+        // desktop: if format.format == .B8G8R8A8_UNORM && format.colorSpace == .SRGB_NONLINEAR {
+        if format.format == .R8G8B8A8_SRGB && format.colorSpace == .SRGB_NONLINEAR {
             swapchain.image_format = format
             found = true
             break
@@ -58,6 +59,7 @@ _create :: proc(vk_context: ^types.vulkan_context, width: u32, height: u32, swap
         //Create swapchain info
         swapchain_create_info: vk.SwapchainCreateInfoKHR
         swapchain_create_info.sType = vk.StructureType.SWAPCHAIN_CREATE_INFO_KHR
+        swapchain_create_info.surface = vk_context.surface
         swapchain_create_info.minImageCount = image_count
         swapchain_create_info.imageFormat = swapchain.image_format.format
         swapchain_create_info.imageColorSpace = swapchain.image_format.colorSpace
@@ -144,6 +146,16 @@ _destroy :: proc(vk_context: ^types.vulkan_context, swapchain: ^types.vulkan_swa
     }
 
     vk.DestroySwapchainKHR(vk_context.device.logical_device, swapchain.handle, vk_context.allocator)
+    
+    //free the memory allocated for the images and views arrays
+    if swapchain.images != nil {
+        mem.Free(swapchain.images, cast(u64)size_of(vk.Image) * cast(u64)swapchain.image_count, .MEMORY_TAG_RENDERER)
+        swapchain.images = nil
+    }
+    if swapchain.views != nil {
+        mem.Free(swapchain.views, cast(u64)size_of(vk.ImageView) * cast(u64)swapchain.image_count, .MEMORY_TAG_RENDERER)
+        swapchain.views = nil
+    }
 }
 
 swapchain_create :: proc(vk_context: ^types.vulkan_context, width: u32, height: u32, out_swapchain: ^types.vulkan_swapchain) {
@@ -203,4 +215,7 @@ swapchain_present :: proc(vk_context: ^types.vulkan_context,
     } else if result != .SUCCESS {
         logger.ERROR("Failed to present swapchain image. vk.QueuePresentKHR returned: %s", result)
     }
+
+    //increment (and loop) the index
+    vk_context.current_frame = (vk_context.current_frame + 1) % cast(u32)swapchain.max_frames_in_flight
 }

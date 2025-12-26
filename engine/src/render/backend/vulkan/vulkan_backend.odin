@@ -1,7 +1,5 @@
 package vulkan_backend
 
-import "base:sanitizer"
-import "core:mem"
 import types "../../../types"
 import vk "vendor:vulkan/dynamic"
 import strings "core:strings"
@@ -11,8 +9,14 @@ import darray "../../../containers/darray"
 import memory "../../../core/memory"
 
 vk_context: types.vulkan_context
+cached_framebuffer_width: u32 = 0
+cached_framebuffer_height: u32 = 0
 
-initialize :: proc(backend: ^types.renderer_backend, application_name: string, plat_state: ^types.platform_state) -> bool {
+initialize :: proc(
+    backend: ^types.renderer_backend, 
+    application_name: string, 
+    plat_state: ^types.platform_state) -> bool {
+
     loaded := vk.initialize()
     if !loaded {
         logger.ERROR("Failed to load Vulkan library.")
@@ -23,6 +27,11 @@ initialize :: proc(backend: ^types.renderer_backend, application_name: string, p
 
     //TODO: custom allocator
     vk_context.allocator = nil
+
+    vk_context.framebuffer_width = cached_framebuffer_width !=0 ? cached_framebuffer_width : 800
+    vk_context.framebuffer_height = cached_framebuffer_height !=0 ? cached_framebuffer_height : 600
+    cached_framebuffer_width = 0
+    cached_framebuffer_height = 0
 
     app_info: vk.ApplicationInfo = {vk.StructureType.APPLICATION_INFO,nil,nil,0,nil,0,0}
     app_info.apiVersion = vk.API_VERSION_1_4
@@ -124,11 +133,76 @@ initialize :: proc(backend: ^types.renderer_backend, application_name: string, p
         return false
     }
 
+    //swapchain
     swapchain_create(&vk_context, vk_context.framebuffer_width, vk_context.framebuffer_height, &vk_context.swapchain)
 
+    //main renderpass
     renderpass_create(&vk_context, &vk_context.main_renderpass, 0,0, cast(f32)vk_context.framebuffer_width, cast(f32)vk_context.framebuffer_height, 0, 0, 0.2, 1.0, 1.0, 0)
 
+    //swapchain framebuffers
+    vk_context.swapchain.framebuffers = cast(^[dynamic]types.vulkan_framebuffer)darray.make(typeid_of(types.vulkan_framebuffer))
+    ok := darray.reserve(vk_context.swapchain.framebuffers, typeid_of(types.vulkan_framebuffer), cast(u64)vk_context.swapchain.image_count)
+    if !ok {
+        logger.FATAL("Failed to reserve memory for swapchain framebuffers.")
+        return false
+    }
+    darray.set_len(vk_context.swapchain.framebuffers, typeid_of(types.vulkan_framebuffer), cast(u64)vk_context.swapchain.image_count)
+    regenerate_framebuffers(backend, &vk_context.swapchain, &vk_context.main_renderpass)
+    
+    //command buffers
     create_command_buffers(backend)
+
+    //create synchronization objects
+    vk_context.image_available_semaphores = cast(^[dynamic]vk.Semaphore)darray.make(typeid_of(vk.Semaphore))
+    ok = darray.reserve(vk_context.image_available_semaphores, cast(u64)vk_context.swapchain.max_frames_in_flight)
+    if !ok {
+        logger.FATAL("Failed to reserve memory for image available semaphores.")
+        return false
+    }
+    vk_context.queue_complete_semaphores = cast(^[dynamic]vk.Semaphore)darray.make(typeid_of(vk.Semaphore))
+    ok = darray.reserve(vk_context.queue_complete_semaphores, cast(u64)vk_context.swapchain.max_frames_in_flight)
+    if !ok {
+        logger.FATAL("Failed to reserve memory for queue complete semaphores.")
+        return false
+    }
+    vk_context.in_flight_fences = cast(^[dynamic]types.vulkan_fence)darray.make(typeid_of(types.vulkan_fence))
+    ok = darray.reserve(vk_context.in_flight_fences, cast(u64)vk_context.swapchain.max_frames_in_flight)
+    if !ok {
+        logger.FATAL("Failed to reserve memory for in-flight fences.")
+        return false
+    }
+
+    for i:u8=0;i<vk_context.swapchain.max_frames_in_flight;i+=1 {
+        semaphore_create_info: vk.SemaphoreCreateInfo = vk.SemaphoreCreateInfo{
+            sType = vk.StructureType.SEMAPHORE_CREATE_INFO,
+            pNext = nil,
+            flags = vk.SemaphoreCreateFlags(nil),
+        }
+        darray.set_len(vk_context.image_available_semaphores, u64(i+1))
+        vk.CreateSemaphore(vk_context.device.logical_device, &semaphore_create_info, vk_context.allocator, &vk_context.image_available_semaphores[i]);
+        darray.set_len(vk_context.queue_complete_semaphores, u64(i+1))
+        vk.CreateSemaphore(vk_context.device.logical_device, &semaphore_create_info, vk_context.allocator, &vk_context.queue_complete_semaphores[i]);
+        
+        // Create the fence in a signaled state, indicating that the first frame has already been "rendered".
+        // This will prevent the application from waiting indefinitely for the first frame to render since it
+        // cannot be rendered until a frame is "rendered" before it.
+        darray.set_len(vk_context.in_flight_fences, u64(i+1))
+        fence_create(&vk_context, true, &vk_context.in_flight_fences[i])
+    }
+
+    // In flight fences should not yet exist at this point, so clear the list. These are stored in pointers
+    // because the initial state should be 0, and will be 0 when not in use. Acutal fences are not owned
+    // by this list.
+    vk_context.images_in_flight = cast(^[dynamic]^types.vulkan_fence)darray.make(typeid_of(^types.vulkan_fence))
+    ok = darray.reserve(vk_context.images_in_flight, cast(u64)vk_context.swapchain.image_count)
+    if !ok {
+        logger.FATAL("Failed to reserve memory for images in flight fences.")
+        return false
+    }
+    for i:u32=0;i<vk_context.swapchain.image_count;i+=1 {
+        darray.set_len(vk_context.images_in_flight, u64(i+1))
+        vk_context.images_in_flight[i] = nil
+    }
 
     logger.INFO("Vulkan renderer initialized successfully.")
     return true
@@ -136,6 +210,37 @@ initialize :: proc(backend: ^types.renderer_backend, application_name: string, p
 
 shutdown :: proc(backend: ^types.renderer_backend) {
     // Clean up Vulkan resources in reverse order of creation
+    vk.DeviceWaitIdle(vk_context.device.logical_device)
+
+    // Sync objects
+    for i:u8=0;i<vk_context.swapchain.max_frames_in_flight;i+=1 {
+        if vk_context.image_available_semaphores[i] != 0 {
+            vk.DestroySemaphore(
+                vk_context.device.logical_device,
+                vk_context.image_available_semaphores[i],
+                vk_context.allocator);
+            vk_context.image_available_semaphores[i] = 0;
+        }
+        if vk_context.queue_complete_semaphores[i] != 0 {
+            vk.DestroySemaphore(
+                vk_context.device.logical_device,
+                vk_context.queue_complete_semaphores[i],
+                vk_context.allocator);
+            vk_context.queue_complete_semaphores[i] = 0;
+        }
+        fence_destroy(&vk_context, &vk_context.in_flight_fences[i]);
+    }
+    darray.delete(vk_context.image_available_semaphores);
+    vk_context.image_available_semaphores = nil;
+
+    darray.delete(vk_context.queue_complete_semaphores);
+    vk_context.queue_complete_semaphores = nil;
+
+    darray.delete(vk_context.in_flight_fences);
+    vk_context.in_flight_fences = nil;
+
+    darray.delete(vk_context.images_in_flight);
+    vk_context.images_in_flight = nil;
 
     //command buffers
     for i: u32; i < vk_context.swapchain.image_count; i += 1 {
@@ -145,6 +250,11 @@ shutdown :: proc(backend: ^types.renderer_backend) {
     }
     darray.delete(vk_context.graphics_command_buffers)
     vk_context.graphics_command_buffers = nil
+
+    //framebuffers
+    for i:u32=0;i<vk_context.swapchain.image_count; i+=1 {
+        framebuffer_destroy(&vk_context, &vk_context.swapchain.framebuffers[i]);
+    }
 
     renderpass_destroy(&vk_context, &vk_context.main_renderpass)
 
@@ -226,20 +336,52 @@ find_memory_index :: proc(type_filter: u32, property_flags: u32) -> i32 {
     return -1
 }
 
+@(private)
 create_command_buffers :: proc(backend: ^types.renderer_backend) {
     if vk_context.graphics_command_buffers == nil {
         vk_context.graphics_command_buffers = cast(^[dynamic]types.vulkan_command_buffer)darray.make(typeid_of(types.vulkan_command_buffer))
         darray.reserve(cast(rawptr)vk_context.graphics_command_buffers, typeid_of(types.vulkan_command_buffer), cast(u64)vk_context.swapchain.image_count)
+        darray.set_len(cast(rawptr)vk_context.graphics_command_buffers, typeid_of(types.vulkan_command_buffer), cast(u64)vk_context.swapchain.image_count)
         for i: u32; i < vk_context.swapchain.image_count; i += 1 {
             memory.zero_memory(&vk_context.graphics_command_buffers[i], size_of(types.vulkan_command_buffer))
         }
     }
 
     for i: u32; i < vk_context.swapchain.image_count; i += 1 {
-        if vk_context.graphics_command_buffers[i].handle != nil {
+        if vk_context.graphics_command_buffers[i].handle == nil {
             command_buffer_allocate(&vk_context, vk_context.device.graphics_command_pool, true, &vk_context.graphics_command_buffers[i])
         }
     }
 
     logger.DEBUG("Vulkan command buffers created.")
+}
+
+@(private)
+regenerate_framebuffers :: proc(
+    backend: ^types.renderer_backend,
+    swapchain: ^types.vulkan_swapchain,
+    renderpass: ^types.vulkan_renderpass) {
+
+    for i:u32=0;i<swapchain.image_count;i+=1 {
+    // TODO: make this dynamic based on the currently configured attachments
+        attachment_count: u32 = 2
+        attachments := [2]vk.ImageView {
+            swapchain.views[i],
+            swapchain.depth_attachment.view
+        }
+
+        framebuffer_create(
+            &vk_context,
+            renderpass,
+            vk_context.framebuffer_width,
+            vk_context.framebuffer_height,
+            attachment_count,
+            raw_data(&attachments),
+            &vk_context.swapchain.framebuffers[i]);
+    }
+}
+
+set_framebuffer_size :: proc(width: u32, height: u32) {
+    cached_framebuffer_width = width
+    cached_framebuffer_height = height
 }

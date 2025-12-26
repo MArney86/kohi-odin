@@ -1,7 +1,6 @@
 package backend
 
 import types "../../types"
-import logger "../../core/logger"
 import vulkan_backend "./vulkan"
 
 create :: proc(type: types.renderer_backend_type, plat_state: ^types.platform_state, out_backend: ^types.renderer_backend) -> bool {
@@ -31,4 +30,8 @@ destroy :: proc(backend: ^types.renderer_backend) {
     backend.resized = nil
     backend.begin_frame = nil
     backend.end_frame = nil
+}
+
+set_framebuffer_size :: proc(width: u32, height: u32) {
+    vulkan_backend.set_framebuffer_size(width, height)
 }

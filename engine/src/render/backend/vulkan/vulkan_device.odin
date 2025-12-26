@@ -53,7 +53,7 @@ select_physical_device :: proc(vk_context : ^types.vulkan_context) -> bool {
         // enable for compute
         // requirements.compute = true
         requirements.sampler_anisotropy = true
-        requirements.discrete_gpu = true
+        requirements.discrete_gpu = false
         extensions_temp := darray.make(typeid_of(cstring))
         requirements.device_extension_names = cast(^[dynamic]cstring)extensions_temp
         ext_name := strings.clone_to_cstring(vk.KHR_SWAPCHAIN_EXTENSION_NAME)

@@ -1,48 +1,13 @@
 package types
 
-import "core:image"
 import vk "vendor:vulkan/dynamic"
 import _c "core:c"
 
 find_memory_index_proc :: proc(u32, u32) -> i32
 
-when ODIN_DEBUG {
-    vulkan_context :: struct {
-        framebuffer_width: u32,
-        framebuffer_height: u32,
-        instance: vk.Instance,
-        allocator: ^vk.AllocationCallbacks,
-        surface: vk.SurfaceKHR,
-        debug_messenger: vk.DebugUtilsMessengerEXT,
-        device: vulkan_device,
-        swapchain: vulkan_swapchain,
-        main_renderpass: vulkan_renderpass,
-        //darray
-        graphics_command_buffers: ^[dynamic]vulkan_command_buffer,
-        
-        image_index: u32,
-        current_frame: u32,
-        recreating_swapchain: bool,
-        find_memory_index: find_memory_index_proc,
-    }
-} else {
-    vulkan_context :: struct {
-        framebuffer_width: u32,
-        framebuffer_height: u32,
-        instance: vk.Instance,
-        allocator: ^vk.AllocationCallbacks,
-        surface: vk.SurfaceKHR,
-        device: vulkan_device,
-        swapchain: vulkan_swapchain,
-        main_renderpass: vulkan_renderpass,
-        //darray
-        graphics_command_buffers: ^[dynamic]vulkan_command_buffer,
-
-        image_index: u32,
-        current_frame: u32,
-        recreating_swapchain: bool,
-        find_memory_index: find_memory_index_proc,
-    }
+vulkan_fence :: struct {
+    handle: vk.Fence,
+    is_signaled: bool,
 }
 
 vulkan_swapchain_support_info :: struct {
@@ -82,6 +47,7 @@ vulkan_swapchain :: struct {
     images: [^]vk.Image,
     views: [^]vk.ImageView,
     depth_attachment: vulkan_image,
+    framebuffers: ^[dynamic]vulkan_framebuffer,
 }
 
 vulkan_image :: struct {
@@ -90,6 +56,13 @@ vulkan_image :: struct {
     view: vk.ImageView,
     width: u32,
     height: u32,
+}
+
+vulkan_framebuffer :: struct {
+    handle: vk.Framebuffer,
+    attachment_count: u32,
+    attachments: [^]vk.ImageView,
+    renderpass: ^vulkan_renderpass,
 }
 
 vulkan_renderpass :: struct {
@@ -122,4 +95,59 @@ vulkan_command_buffer_state :: enum _c.int {
     RECORDING_ENDED,
     SUBMITTED,
     NOT_ALLOCATED,
+}
+
+when ODIN_DEBUG {
+    vulkan_context :: struct {
+        framebuffer_width: u32,
+        framebuffer_height: u32,
+        instance: vk.Instance,
+        allocator: ^vk.AllocationCallbacks,
+        surface: vk.SurfaceKHR,
+        debug_messenger: vk.DebugUtilsMessengerEXT,
+        device: vulkan_device,
+        swapchain: vulkan_swapchain,
+        main_renderpass: vulkan_renderpass,
+        //darray
+        graphics_command_buffers: ^[dynamic]vulkan_command_buffer,
+        image_available_semaphores: ^[dynamic]vk.Semaphore,
+        queue_complete_semaphores: ^[dynamic]vk.Semaphore,
+
+        in_flight_fence_count: u32,
+        in_flight_fences: ^[dynamic]vulkan_fence,
+
+        //holds pointers to fences that exist and owned elsewhere
+        images_in_flight: ^[dynamic]^vulkan_fence,
+        
+        image_index: u32,
+        current_frame: u32,
+        recreating_swapchain: bool,
+        find_memory_index: find_memory_index_proc,
+    }
+} else {
+    vulkan_context :: struct {
+        framebuffer_width: u32,
+        framebuffer_height: u32,
+        instance: vk.Instance,
+        allocator: ^vk.AllocationCallbacks,
+        surface: vk.SurfaceKHR,
+        device: vulkan_device,
+        swapchain: vulkan_swapchain,
+        main_renderpass: vulkan_renderpass,
+        //darray
+        graphics_command_buffers: ^[dynamic]vulkan_command_buffer,
+        image_available_semaphores: ^[dynamic]vk.Semaphore,
+        queue_complete_semaphores: ^[dynamic]vk.Semaphore,
+
+        in_flight_fence_count: u32,
+        in_flight_fences: ^[dynamic]vulkan_fence,
+
+        //holds pointers to fences that exist and owned elsewhere
+        images_in_flight: ^[dynamic]^vulkan_fence,
+
+        image_index: u32,
+        current_frame: u32,
+        recreating_swapchain: bool,
+        find_memory_index: find_memory_index_proc,
+    }
 }
